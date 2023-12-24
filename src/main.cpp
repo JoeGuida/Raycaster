@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "camera.hpp"
+#include "color.hpp"
 #include "line.hpp"
 #include "intersection.hpp"
 #include "rectangle.hpp"
@@ -54,12 +55,12 @@ int main() {
     // Map Setup
     // --------------------------------------------------------------------------------------------
     std::unordered_map<int, glm::vec3> COLORS {
-        {0, glm::vec3(0.0823f, 0.0549f, 0.0627f)},
-        {1, glm::vec3(0.1529f, 0.1529f, 0.2235f)},
-        {2, glm::vec3(0.2235f, 0.2196f, 0.2862f)},
-        {3, glm::vec3(0.2313f, 0.2549f, 0.3215f)},
-        {4, glm::vec3(0.3098f, 0.3529f, 0.3921f)},
-        {5, glm::vec3(0.4666f, 0.5333f, 0.5490f)}
+        {5, glm::vec3(0.0823f, 0.0549f, 0.0627f)},
+        {4, glm::vec3(0.1529f, 0.1529f, 0.2235f)},
+        {3, glm::vec3(0.2235f, 0.2196f, 0.2862f)},
+        {2, glm::vec3(0.2313f, 0.2549f, 0.3215f)},
+        {1, glm::vec3(0.3098f, 0.3529f, 0.3921f)},
+        {0, glm::vec3(0.4666f, 0.5333f, 0.5490f)}
     };
 
     const char MAP[] {
@@ -97,10 +98,7 @@ int main() {
     camera.update_rays();
     Line camera_direction(
         camera.transform.position, 
-        camera.transform.position + camera.get_direction() * 1.0f,
-        BLUE_MATERIAL,
-        Transform(glm::vec3(0.0f))
-    );
+        camera.transform.position + camera.get_direction() * 1.0f);
 
     // --------------------------------------------------------------------------------------------
     // Render Loop
@@ -109,17 +107,26 @@ int main() {
     shader->set("projection", projection);
     while (!glfwWindowShouldClose(window)) {
         // clear window
-        const char x = '5';
         glm::vec3 background_color = COLORS['0'];
         glClearColor(background_color.r, background_color.g, background_color.b, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // render
-        Point camera_point(5.0f, Material(glm::vec3(1.0f, 0.0f, 0.0f)), camera.transform.position);
+        Point camera_point(5.0f, RED_MATERIAL, camera.transform.position);
+        Line camera_direction = Line(
+            camera.transform.position,
+            camera.transform.position + camera.get_direction() * 0.25f);
         Ray* camera_rays = camera.get_rays();
 
+        //Renderer::draw(camera_point, shader);
+        Renderer::draw(camera_direction, Color::RED, shader);
+
+        for (int i = 0; i < FOV_RAY_COUNT; i++) {
+            Renderer::draw(camera_rays[i], WHITE_MATERIAL, shader);
+        }
+
         for (int i = 0; i < lines.size(); i++) {
-            Renderer::draw(lines[i], shader);
+            Renderer::draw(lines[i], Color::GREEN, shader);
         }
 
         for (int i = 0; i < rectangles.size(); i++) {
@@ -152,10 +159,18 @@ std::vector<Line> get_lines(const std::vector<Rectangle>& rectangles) {
             glm::vec3( width / 2.0f, -height / 2.0f, 0.0f)
         };
 
-        lines.push_back(Line(vertices[0], vertices[1], RED_MATERIAL, rectangles[i].transform)); // top
-        lines.push_back(Line(vertices[1], vertices[3], BLUE_MATERIAL, rectangles[i].transform)); // right
-        lines.push_back(Line(vertices[2], vertices[3], GREEN_MATERIAL, rectangles[i].transform)); // bottom
-        lines.push_back(Line(vertices[0], vertices[2], WHITE_MATERIAL, rectangles[i].transform)); // left
+        lines.push_back(Line(
+            rectangles[i].transform.position + vertices[0], 
+            rectangles[i].transform.position + vertices[1])); // top
+        lines.push_back(Line(
+            rectangles[i].transform.position + vertices[1], 
+            rectangles[i].transform.position + vertices[3])); // right
+        lines.push_back(Line(
+            rectangles[i].transform.position + vertices[2], 
+            rectangles[i].transform.position + vertices[3])); // bottom
+        lines.push_back(Line(
+            rectangles[i].transform.position + vertices[0], 
+            rectangles[i].transform.position + vertices[2])); // left
     }
     return lines;
 }
@@ -173,7 +188,7 @@ std::vector<Rectangle> get_rectangles(const char* map, std::unordered_map<int, g
                 continue;
             }
 
-            glm::vec3 color = colors[map[i * MAP_WIDTH + j]];
+            glm::vec3 color = colors[map[i * MAP_WIDTH + j] - '0'];
             glm::vec3 pos(start.x + j * size, start.y - i * size, 0.0f);
             Rectangle rect(size, Material(color), Transform(pos));
             rectangles.push_back(rect);

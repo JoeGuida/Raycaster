@@ -4,13 +4,11 @@ uint32_t Renderer::VAO;
 uint32_t Renderer::VBO;
 uint32_t Renderer::EBO;
 
-void Renderer::draw(const Line& line, const std::shared_ptr<Shader>& shader) {
-    glm::vec3 start = line.start;
-    glm::vec3 end = line.end;
+void Renderer::draw(const Line& line, const Color& color, const std::shared_ptr<Shader>& shader) {
     std::array<uint32_t, 2> indices{ 0, 1 };
     std::array<float, 6> vertices{
-        start.x, start.y, start.z,
-        end.x, end.y, end.z
+        line.start.x, line.start.y, line.start.z,
+        line.end.x, line.end.y, line.end.z
     };
 
     glBindVertexArray(VAO);
@@ -24,11 +22,8 @@ void Renderer::draw(const Line& line, const std::shared_ptr<Shader>& shader) {
 
     // Apply matrix transformation and set shader uniforms
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, line.transform.position);
-    model = glm::rotate(model, line.transform.rotation.z, glm::vec3(0.0f, 0.0f, -1.0f));
-    model = glm::scale(model, line.transform.scale);
     shader->set("model", model);
-    shader->set("color", line.material.color);
+    shader->set("color", glm::vec3(color.r, color.g, color.b));
 
     glDrawElements(GL_LINES, 2, GL_UNSIGNED_INT, 0);
 }
@@ -46,8 +41,6 @@ void Renderer::draw(const Point& point, const std::shared_ptr<Shader>& shader) {
     // Apply matrix transformation and set shader uniforms
     glm::mat4 model = glm::mat4(1.0f);
     model = glm::translate(model, point.transform.position);
-    model = glm::rotate(model, point.transform.rotation.z, glm::vec3(0.0f, 0.0f, -1.0f));
-    model = glm::scale(model, point.transform.scale);
     shader->set("model", model);
     shader->set("color", point.material.color);
     shader->set("pointSize", point.size);

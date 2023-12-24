@@ -8,10 +8,10 @@
 class FileSystem final {
 private:
     static std::string get_root() {
-        const char* env = std::getenv("SIMPLE_RENDERER_ROOT");
+        const char* env = std::getenv("RAYCASTER_ROOT");
 
         if (!env) {
-            std::cout << "ERROR::FILESYSTEM Error reading environment variable: SIMPLE_RENDERER_ROOT" << std::endl;
+            std::cout << "ERROR::FILESYSTEM Error reading environment variable: RAYCASTER_ROOT" << std::endl;
             return nullptr;
         }
         return std::string(env);

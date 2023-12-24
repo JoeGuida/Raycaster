@@ -8,7 +8,7 @@
 
 class Camera {
 public:
-	Camera(float fov, const Transform& transform, const glm::vec3& direction, float num_rays) : 
+	Camera(float fov, const Transform& transform, const glm::vec3& direction, int num_rays) : 
 		fov(fov), 
 		transform(transform), 
 		direction(direction),
@@ -32,7 +32,7 @@ public:
 private:
 	float fov;
 	glm::vec3 direction;
-	float num_rays;
+	int num_rays;
 	Ray* rays;
 };
 
