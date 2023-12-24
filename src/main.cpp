@@ -112,21 +112,25 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // render
-        Point camera_point(5.0f, RED_MATERIAL, camera.transform.position);
+        Point camera_point(7.5f, GREEN_MATERIAL, camera.transform.position);
         Line camera_direction = Line(
             camera.transform.position,
             camera.transform.position + camera.get_direction() * 0.25f);
         Ray* camera_rays = camera.get_rays();
 
-        //Renderer::draw(camera_point, shader);
+        Renderer::draw(camera_point, shader);
         Renderer::draw(camera_direction, Color::RED, shader);
 
         for (int i = 0; i < FOV_RAY_COUNT; i++) {
-            Renderer::draw(camera_rays[i], WHITE_MATERIAL, shader);
-        }
-
-        for (int i = 0; i < lines.size(); i++) {
-            Renderer::draw(lines[i], Color::GREEN, shader);
+            float closest_hit = 4.0f;
+            for (const Line& line : lines) {
+                float distance = Intersection::raycast(camera_rays[i], line);
+                if (distance != -1.0f && distance < closest_hit) {
+                    closest_hit = distance;
+                }
+            }
+            
+            Renderer::draw(camera_rays[i], WHITE_MATERIAL, shader, closest_hit);
         }
 
         for (int i = 0; i < rectangles.size(); i++) {

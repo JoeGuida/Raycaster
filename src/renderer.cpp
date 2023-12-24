@@ -48,8 +48,8 @@ void Renderer::draw(const Point& point, const std::shared_ptr<Shader>& shader) {
     glDrawArrays(GL_POINTS, 0, 1);
 }
 
-void Renderer::draw(const Ray& ray, const Material& material, const std::shared_ptr<Shader>& shader) {
-    glm::vec3 destination = ray.origin + ray.direction * 4.0f;
+void Renderer::draw(const Ray& ray, const Material& material, const std::shared_ptr<Shader>& shader, float distance) {
+    glm::vec3 destination = ray.direction * distance;
     std::array<uint32_t, 2> indices{ 0, 1 };
     std::array<float, 6> vertices{
         0.0f, 0.0f, 0.0f,

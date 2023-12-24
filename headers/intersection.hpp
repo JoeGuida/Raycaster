@@ -5,6 +5,7 @@
 #include "ray.hpp"
 
 class Intersection {
+public:
 	static float raycast(const Ray& ray, const Line& line);
 };
 
