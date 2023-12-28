@@ -22,22 +22,23 @@ GLFWwindow* initialize();
 void process_input(GLFWwindow* window, int key, int scancode, int action, int mods);
 void set_wireframe();
 
-const int SCREEN_WIDTH = 1080;
-const int SCREEN_HEIGHT = 1080;
-const int VIEWPORT_WIDTH = 2;
-const int VIEWPORT_HEIGHT = 2;
-const int FOV_RAY_COUNT = 1920;
+constexpr int SCREEN_WIDTH = 1920;
+constexpr int SCREEN_HEIGHT = 1080;
+constexpr int VIEWPORT_WIDTH = 2;
+constexpr int VIEWPORT_HEIGHT = 2;
+constexpr float MAP_SCREEN_PERCENTAGE = 0.4f;
+constexpr int FOV_RAY_COUNT = SCREEN_WIDTH;
 constexpr double ASPECT_RATIO = double(SCREEN_WIDTH) / double(SCREEN_HEIGHT);
-const int MAP_WIDTH = 16;
-const int MAP_HEIGHT = 16;
-const int EMPTY_SPACE = -16;
+constexpr int MAP_WIDTH = 16;
+constexpr int MAP_HEIGHT = 16;
+constexpr int EMPTY_SPACE = -16;
 
-bool wireframe = false;
+static bool wireframe = false;
 
-const Material RED_MATERIAL(glm::vec3(1.0f, 0.0f, 0.0f));
-const Material GREEN_MATERIAL(glm::vec3(0.0f, 1.0f, 0.0f));
-const Material BLUE_MATERIAL(glm::vec3(0.0f, 0.0f, 1.0f));
-const Material WHITE_MATERIAL(glm::vec3(1.0f));
+static const Material RED_MATERIAL(glm::vec3(1.0f, 0.0f, 0.0f));
+static const Material GREEN_MATERIAL(glm::vec3(0.0f, 1.0f, 0.0f));
+static const Material BLUE_MATERIAL(glm::vec3(0.0f, 0.0f, 1.0f));
+static const Material WHITE_MATERIAL(glm::vec3(1.0f));
 
 int main() {
     // --------------------------------------------------------------------------------------------
@@ -86,19 +87,24 @@ int main() {
     // --------------------------------------------------------------------------------------------
     // Object Setup
     // --------------------------------------------------------------------------------------------
+    static const float size = VIEWPORT_WIDTH / static_cast<float>(MAP_WIDTH) * MAP_SCREEN_PERCENTAGE * MAP_WIDTH;
+    Rectangle map_background(size, Material(glm::vec3(0.2f)), 
+        Transform(glm::vec3(-ASPECT_RATIO + size / 2.0f, 1.0f - size / 2.0f, 0.0f)));
     std::vector<Rectangle> rectangles = get_rectangles(MAP, COLORS, MAP_WIDTH * MAP_HEIGHT);
     std::vector<Line> lines = get_lines(rectangles);
 
     Camera camera(
         glm::radians(45.0f), 
-        Transform(glm::vec3(-0.65f, 0.75f, 0.0f)),
+        Transform(glm::vec3(-1.65f, 0.9f, 0.0f)),
         glm::vec3(0.0f, -1.0f, 0.0f),
         FOV_RAY_COUNT
     );
     camera.update_rays();
+    Point camera_point(5.0f, GREEN_MATERIAL, camera.transform.position);
     Line camera_direction(
         camera.transform.position, 
-        camera.transform.position + camera.get_direction() * 1.0f);
+        camera.transform.position + camera.get_direction() * 0.1f);
+    Ray* camera_rays = camera.get_rays();
 
     // --------------------------------------------------------------------------------------------
     // Render Loop
@@ -112,12 +118,6 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // render
-        Point camera_point(7.5f, GREEN_MATERIAL, camera.transform.position);
-        Line camera_direction = Line(
-            camera.transform.position,
-            camera.transform.position + camera.get_direction() * 0.25f);
-        Ray* camera_rays = camera.get_rays();
-
         Renderer::draw(camera_point, shader);
         Renderer::draw(camera_direction, Color::RED, shader);
 
@@ -136,6 +136,7 @@ int main() {
         for (int i = 0; i < rectangles.size(); i++) {
             Renderer::draw(rectangles[i], shader);
         }
+        Renderer::draw(map_background, shader);
 
         // swap buffers and poll for input events
         glfwSwapBuffers(window);
@@ -183,8 +184,8 @@ std::vector<Rectangle> get_rectangles(const char* map, std::unordered_map<int, g
     std::vector<Rectangle> rectangles;
     rectangles.reserve(count);
 
-    static const float size = VIEWPORT_WIDTH / static_cast<float>(MAP_WIDTH);
-    static const glm::vec2 start(-1.0f + size / 2.0f, 1.0f - size / 2.0f);
+    static const float size = VIEWPORT_WIDTH / static_cast<float>(MAP_WIDTH) * MAP_SCREEN_PERCENTAGE;
+    static const glm::vec2 start(-ASPECT_RATIO + size / 2.0f, 1.0f - size / 2.0f);
 
     for (int i = 0; i < MAP_HEIGHT; i++) {
         for (int j = 0; j < MAP_WIDTH; j++) {
