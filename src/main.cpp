@@ -298,17 +298,18 @@ void process_input(GLFWwindow* window, int key, int scancode, int action, int mo
     }
 
     glm::vec3 offset(0.0f);
+    glm::vec3 camera_right = glm::cross(glm::vec3(0.0f, 0.0f, -1.0f), camera.direction);
     if (key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-        offset += glm::vec3(0.0f, -1.0f, 0.0f) * CAMERA_VELOCITY;
+        offset += camera.direction * CAMERA_VELOCITY;
     }
     if (key == GLFW_KEY_S && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-        offset += glm::vec3(0.0f, 1.0f, 0.0f) * CAMERA_VELOCITY;
+        offset += -camera.direction * CAMERA_VELOCITY;
     }
     if (key == GLFW_KEY_A && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-        offset += glm::vec3(1.0f, 0.0f, 0.0f) * CAMERA_VELOCITY;
+        offset += -camera_right * CAMERA_VELOCITY;
     }
     if (key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-        offset += glm::vec3(-1.0f, 0.0f, 0.0f) * CAMERA_VELOCITY;
+        offset += camera_right * CAMERA_VELOCITY;
     }
 
     camera.translate(offset);
