@@ -25,13 +25,15 @@ public:
 
 	glm::vec3 get_direction() const { return direction; }
 	Ray* get_rays() const { return rays; };
+	void translate(const glm::vec3& offset);
+	void rotate(float velocity);
 	void update_rays();
 
 	Transform transform;
+	glm::vec3 direction;
 
 private:
 	float fov;
-	glm::vec3 direction;
 	int num_rays;
 	Ray* rays;
 };

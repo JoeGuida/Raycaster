@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\lib\glad\src\glad.c" />
+    <ClCompile Include="..\..\..\..\..\opengl\include\glad\src\glad.c" />
     <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\color.cpp" />
     <ClCompile Include="src\intersection.cpp" />
@@ -99,8 +99,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\JoeGu\source\repos\raycaster\headers;C:\lib\glm;C:\lib\glfw\include;C:\lib\glad\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\lib\glfw\build\src\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\opengl\include\GLFW\include;C:\opengl\include\glm;C:\opengl\include\glad\include;C:\Users\Joe\source\repos\Raycaster\headers;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\opengl\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

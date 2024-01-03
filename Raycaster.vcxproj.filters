@@ -33,10 +33,10 @@
     <ClCompile Include="src\intersection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\..\..\lib\glad\src\glad.c">
+    <ClCompile Include="src\color.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\color.cpp">
+    <ClCompile Include="..\..\..\..\..\opengl\include\glad\src\glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
