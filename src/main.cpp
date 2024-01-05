@@ -11,13 +11,14 @@
 #include "color.hpp"
 #include "line.hpp"
 #include "intersection.hpp"
+#include "raycasthit.hpp"
 #include "rectangle.hpp"
 #include "renderer.hpp"
 #include "shader.hpp"
 
 void cursor_callback(GLFWwindow* window, double xpos, double ypos);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-float get_closest_line_hit(const Ray& ray, const std::vector<Line>& lines);
+float get_closest_line_hit(const Ray& ray, const std::vector<Rectangle>& rectangles, RaycastHit& hit);
 std::vector<Line> get_lines(const std::vector<Rectangle>& rectangles);
 std::vector<Rectangle> get_rectangles(const char* map, std::unordered_map<int, glm::vec3>& colors, int count);
 GLFWwindow* initialize();
@@ -115,8 +116,8 @@ int main() {
     std::vector<Line> lines = get_lines(rectangles);
 
     // floor/ceiling
-    Rectangle floor(ASPECT_RATIO * 2.0, 1.0f, Material(COLORS[2]), Transform(glm::vec3(0.0f, -0.5f, 0.0f)));
-    Rectangle ceiling(ASPECT_RATIO * 2.0, 1.0f, Material(COLORS[0]), Transform(glm::vec3(0.0f, 0.5f, 0.0f)));
+    Rectangle floor(ASPECT_RATIO * 2.0, 1.0f, Material(glm::vec3(0.2f)), Transform(glm::vec3(0.0f, -0.5f, 0.0f)));
+    Rectangle ceiling(ASPECT_RATIO * 2.0, 1.0f, Material(glm::vec3(0.4f)), Transform(glm::vec3(0.0f, 0.5f, 0.0f)));
 
     camera.update_rays();
     Point camera_point(5.0f, GREEN_MATERIAL, camera.transform.position);
@@ -141,11 +142,13 @@ int main() {
         Renderer::draw(camera_direction, Color::RED, shader);
 
         // draw the minimap camera rays
-        std::array<float, FOV_RAY_COUNT> heights;
+        std::array<RaycastHit, FOV_RAY_COUNT> hits;
         for (int i = 0; i < FOV_RAY_COUNT; i++) {
-            float closest_hit = get_closest_line_hit(camera_rays[i], lines);
+            RaycastHit hit = RaycastHit();
+            float closest_hit = get_closest_line_hit(camera_rays[i], rectangles, hit);
             float view_angle = glm::angle(camera.direction, camera_rays[i].direction);
-            heights[i] = (size - closest_hit) * cos(view_angle);
+            hit.t = (0.8f - closest_hit) * cos(view_angle);
+            hits[i] = hit;
             Renderer::draw(camera_rays[i], WHITE_MATERIAL, shader, closest_hit);
         }
 
@@ -156,10 +159,10 @@ int main() {
         Renderer::draw(map_background, shader);
 
         // draw the raycasted lines
-        for (int i = 0; i < heights.size(); i++) {
+        for (int i = 0; i < hits.size(); i++) {
             glm::vec3 pos(-ASPECT_RATIO + i * (ASPECT_RATIO * 2 / FOV_RAY_COUNT), 0.0f, 0.0f);
-            Line line(pos + glm::vec3(0.0f, -heights[i], 0.0f), pos + glm::vec3(0.0f, heights[i], 0.0f));
-            Renderer::draw(line, Color(COLORS[1]), shader);
+            Line line(pos + glm::vec3(0.0f, -hits[i].t, 0.0f), pos + glm::vec3(0.0f, hits[i].t, 0.0f));
+            Renderer::draw(line, Color(hits[i].material.color), shader);
         }
 
         // draw floor/ceiling
@@ -190,15 +193,38 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
 }
 
-float get_closest_line_hit(const Ray& ray, const std::vector<Line>& lines) {
+float get_closest_line_hit(const Ray& ray, const std::vector<Rectangle>& rectangles, RaycastHit& hit) {
     float closest_hit = MAP_SIZE;
-    for (const Line& line : lines) {
-        float distance = Intersection::raycast(ray, line);
-        if (distance != -1.0f && distance < closest_hit) {
-            closest_hit = distance;
+
+    for (int i = 0; i < rectangles.size(); i++) {
+        float width = rectangles[i].width;
+        float height = rectangles[i].height;
+        glm::vec3 pos = rectangles[i].transform.position;
+
+        std::array<glm::vec3, 4> vertices = {
+            glm::vec3(-width / 2.0f,  height / 2.0f, 0.0f) + pos,
+            glm::vec3( width / 2.0f,  height / 2.0f, 0.0f) + pos,
+            glm::vec3(-width / 2.0f, -height / 2.0f, 0.0f) + pos,
+            glm::vec3( width / 2.0f, -height / 2.0f, 0.0f) + pos
+        };
+
+        std::array<Line, 4> lines = {
+            Line(vertices[0], vertices[1]),
+            Line(vertices[1], vertices[3]),
+            Line(vertices[3], vertices[2]),
+            Line(vertices[2], vertices[0])
+        };
+
+        for (int j = 0; j < lines.size(); j++) {
+            float distance = Intersection::raycast(ray, lines[j]);
+            if (distance != -1.0f && distance < closest_hit) {
+                closest_hit = distance;
+                hit.material = rectangles[i].material;
+            }
         }
     }
 
+    hit.t = closest_hit;
     return closest_hit;
 }
 

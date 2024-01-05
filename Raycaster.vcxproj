@@ -41,6 +41,7 @@
     <ClInclude Include="headers\material.hpp" />
     <ClInclude Include="headers\point.hpp" />
     <ClInclude Include="headers\ray.hpp" />
+    <ClInclude Include="headers\raycasthit.hpp" />
     <ClInclude Include="headers\rectangle.hpp" />
     <ClInclude Include="headers\renderer.hpp" />
     <ClInclude Include="headers\shader.hpp" />

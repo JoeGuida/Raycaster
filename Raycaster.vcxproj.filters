@@ -88,5 +88,8 @@
     <ClInclude Include="headers\color.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="headers\raycasthit.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
