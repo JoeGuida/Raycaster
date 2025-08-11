@@ -20,24 +20,11 @@ uint32_t vao;
 uint32_t vbo;
 uint32_t ebo;
 
-float size = 1.0f;
-float half_size = size / 2.0f;
-
-struct Rectangle {
-    std::vector<glm::vec3> positions;
-    std::vector<glm::vec3> sizes;
-};
-
-std::array data = {
-    -half_size,  half_size, 0.0f,
-     half_size,  half_size, 0.0f,
-     half_size, -half_size, 0.0f,
-    -half_size, -half_size, 0.0f
-};
-
-std::array<uint32_t, 6> indices = {
-    0, 1, 2,
-    0, 2, 3
+namespace Raycaster {
+    struct Rectangle {
+        std::vector<glm::vec3> positions;
+        std::vector<float> sizes;
+    };
 };
 
 bool is_running = true;
@@ -102,7 +89,7 @@ bool InitializeWindow(HINSTANCE hInstance, int ShowWnd, int width, int height, c
     return true;
 }
 
-void Update(HWND hwnd, GLuint shader_program) {
+void Update(HWND hwnd, GLuint shader_program, const Raycaster::Rectangle& rectangles) {
     MSG msg;
     ZeroMemory(&msg, sizeof(MSG));
     HDC hdc = GetDC(hwnd);
@@ -118,8 +105,31 @@ void Update(HWND hwnd, GLuint shader_program) {
         else {
             glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            constexpr std::array<uint32_t, 6> indices = {0, 1, 2, 0, 2, 3};
+
             glBindVertexArray(vao);
             glUseProgram(shader_program);
+
+            for(int i = 0; i < rectangles.positions.size(); i++) {
+                const float half_size = rectangles.sizes[i] / 2.0f;
+                std::array data = {
+                    -half_size,  half_size, 0.0f,
+                     half_size,  half_size, 0.0f,
+                     half_size, -half_size, 0.0f,
+                    -half_size, -half_size, 0.0f
+                };
+
+                glBindBuffer(GL_ARRAY_BUFFER, vbo);
+                glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), data.data(), GL_STATIC_DRAW);
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+                glEnableVertexAttribArray(0);
+                glUniform3f(glGetUniformLocation(shader_program, "color"), 0.1f, 0.1f, 0.1f);
+                glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+            }
+
             glUniform3f(glGetUniformLocation(shader_program, "color"), 0.1f, 0.1f, 0.1f);
             glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
             SwapBuffers(hdc);
@@ -144,14 +154,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     glGenBuffers(1, &vbo);
     glGenBuffers(1, &ebo);
 
-    glBindVertexArray(vao);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), data.data(), GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
+    
     constexpr std::string_view map = 
     "0000222222220000"\
     "1              0"\
@@ -169,6 +172,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     "0 0000000      0"\
     "0              0"\
     "0002222222200000";
+
+    Raycaster::Rectangle rectangles;
+    for(char c : map) {
+        rectangles.positions.push_back(glm::vec3(0.0f));
+        rectangles.sizes.push_back(0.25f);
+    }
 
     constexpr std::string_view vertex_shader_code = R"(
     #version 330 core
@@ -201,7 +210,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     GLuint fragment_shader = compile_shader(fragment_shader_code.data(), GL_FRAGMENT_SHADER);
     GLuint shader_program = link_shaders(vertex_shader, fragment_shader);
 
-    Update(hwnd, shader_program);
+    Update(hwnd, shader_program, rectangles);
 
     return 0;
 }
