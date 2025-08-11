@@ -1,0 +1,8 @@
+*.ps1
+*.exe
+*.pch
+.vs/
+lib/
+include/KHR
+include/glcorearb.h
+include/windows.h
