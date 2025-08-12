@@ -1,5 +1,4 @@
 #define UNICODE
-#define _UNICODE
 
 #include <Windows.h>
 #include <gl/GL.h>
@@ -11,6 +10,7 @@
 #include "shader.hpp"
 
 #include <array>
+#include <fstream>
 #include <string_view>
 
 HWND hwnd;
@@ -20,7 +20,7 @@ uint32_t vao;
 uint32_t vbo;
 uint32_t ebo;
 
-namespace Raycaster {
+namespace rc {
     struct Rectangle {
         std::vector<glm::vec3> positions;
         std::vector<float> sizes;
@@ -89,7 +89,7 @@ bool InitializeWindow(HINSTANCE hInstance, int ShowWnd, int width, int height, c
     return true;
 }
 
-void Update(HWND hwnd, GLuint shader_program, const Raycaster::Rectangle& rectangles) {
+void Update(HWND hwnd, GLuint shader_program, const rc::Rectangle& rectangles) {
     MSG msg;
     ZeroMemory(&msg, sizeof(MSG));
     HDC hdc = GetDC(hwnd);
@@ -106,18 +106,22 @@ void Update(HWND hwnd, GLuint shader_program, const Raycaster::Rectangle& rectan
             glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            constexpr std::array<uint32_t, 6> indices = {0, 1, 2, 0, 2, 3};
+            constexpr std::array<uint32_t, 6> indices = {
+                0, 1, 2, 
+                0, 2, 3
+            };
 
             glBindVertexArray(vao);
             glUseProgram(shader_program);
 
             for(int i = 0; i < rectangles.positions.size(); i++) {
                 const float half_size = rectangles.sizes[i] / 2.0f;
+                const glm::vec3 pos = rectangles.positions[i];
                 std::array data = {
-                    -half_size,  half_size, 0.0f,
-                     half_size,  half_size, 0.0f,
-                     half_size, -half_size, 0.0f,
-                    -half_size, -half_size, 0.0f
+                    pos.x - half_size, pos.y + half_size, 0.0f,
+                    pos.x + half_size, pos.y + half_size, 0.0f,
+                    pos.x + half_size, pos.y - half_size, 0.0f,
+                    pos.x - half_size, pos.y - half_size, 0.0f
                 };
 
                 glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -126,18 +130,21 @@ void Update(HWND hwnd, GLuint shader_program, const Raycaster::Rectangle& rectan
                 glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
                 glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
                 glEnableVertexAttribArray(0);
-                glUniform3f(glGetUniformLocation(shader_program, "color"), 0.1f, 0.1f, 0.1f);
+                glUniform3f(glGetUniformLocation(shader_program, "color"), 1.0f, 0.0f, 0.0f);
                 glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
             }
 
-            glUniform3f(glGetUniformLocation(shader_program, "color"), 0.1f, 0.1f, 0.1f);
-            glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
             SwapBuffers(hdc);
         }
     }
 }
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
+    AllocConsole();
+    FILE* fp;
+    freopen_s(&fp, "CONOUT$", "w", stdout);
+    freopen_s(&fp, "CONOUT$", "w", stderr);
+
     constexpr wchar_t window_name[] = L"Default Window Class";
     constexpr wchar_t window_title[] = L"Raycaster";
     constexpr int width = 1280;
@@ -173,41 +180,46 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     "0              0"\
     "0002222222200000";
 
-    Raycaster::Rectangle rectangles;
-    for(char c : map) {
-        rectangles.positions.push_back(glm::vec3(0.0f));
-        rectangles.sizes.push_back(0.25f);
+    rc::Rectangle rectangles;
+    constexpr float size = 2.0f / 16;
+    for(int i = 0; i < map.size(); i++) {
+        if(map[i] - '0' == ' ') { continue; }
+        glm::vec3 pos = glm::vec3(-1.0f + size / 2.0f, 1.0f - size / 2.0f, 0.0f);
+        rectangles.positions.push_back(pos);
+        rectangles.sizes.push_back(size);
     }
 
-    constexpr std::string_view vertex_shader_code = R"(
-    #version 330 core
-
-    layout(location = 0) in vec3 pos;
-
-    uniform vec3 color;
-
-    out vec3 vertex_color;
-
-    void main() {
-        gl_Position = vec4(pos, 1.0);
-        vertex_color = color;
+    std::ifstream vertex_shader_file("src/shaders/default.vert");
+    std::ifstream fragment_shader_file("src/shaders/default.frag");
+    if(!vertex_shader_file) {
+        std::cerr << std::format("ERROR READING FILE :: VERTEX SHADER") << std::endl;
     }
-    )";
 
-    constexpr std::string_view fragment_shader_code = R"(
-    #version 330 core
-
-    in vec3 vertex_color;
-    out vec4 frag_color;
-
-    void main() {
-        frag_color = vec4(vertex_color, 1.0);
+    if(!fragment_shader_file) {
+        std::cerr << std::format("ERROR READING FILE :: FRAGMENT SHADER") << std::endl;
     }
-    )";
+
+    vertex_shader_file.seekg(0, std::ios::end);
+    fragment_shader_file.seekg(0, std::ios::end);
+
+    size_t v_size = vertex_shader_file.tellg();
+    size_t f_size = fragment_shader_file.tellg();
+
+    vertex_shader_file.seekg(0);
+    fragment_shader_file.seekg(0);
+
+    std::string vertex_buffer(v_size, '\0');
+    std::string fragment_buffer(f_size, '\0');
+
+    vertex_shader_file.read(&vertex_buffer[0], v_size);
+    fragment_shader_file.read(&fragment_buffer[0], f_size);
+
+    std::string_view vertex_shader_code(vertex_buffer);
+    std::string_view fragment_shader_code(fragment_buffer);
 
     Shader shader = {};
-    GLuint vertex_shader = compile_shader(vertex_shader_code.data(), GL_VERTEX_SHADER);
-    GLuint fragment_shader = compile_shader(fragment_shader_code.data(), GL_FRAGMENT_SHADER);
+    GLuint vertex_shader = compile_shader(vertex_shader_code, GL_VERTEX_SHADER);
+    GLuint fragment_shader = compile_shader(fragment_shader_code, GL_FRAGMENT_SHADER);
     GLuint shader_program = link_shaders(vertex_shader, fragment_shader);
 
     Update(hwnd, shader_program, rectangles);

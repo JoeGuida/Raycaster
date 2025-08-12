@@ -12,9 +12,9 @@ struct Shader {
 	uint32_t id;
 };
 
-GLuint compile_shader(const std::string& src, GLenum type) {
+GLuint compile_shader(const std::string_view& src, GLenum type) {
 	uint32_t shader = glCreateShader(type);
-	const char* s = src.c_str();
+    const char* s = src.data();
 	glShaderSource(shader, 1, &s, nullptr);
 	glCompileShader(shader);
 
@@ -26,7 +26,6 @@ GLuint compile_shader(const std::string& src, GLenum type) {
 		std::string log(logLength, ' ');
 		glGetShaderInfoLog(shader, logLength, nullptr, &log[0]);
 
-		std::string shader_type = type == GL_VERTEX_SHADER ? "Vertex" : "Fragment";
 		std::cerr << std::format("Vertex Shader Compilation Failed! :: {} {}", type, log) << std::endl;
 		glDeleteShader(shader);
 		return 0;
