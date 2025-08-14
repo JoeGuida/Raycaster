@@ -3,6 +3,8 @@
 
 #include <gl/GL.h>
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include <cstdint>
 #include <format>
 #include <fstream>
@@ -47,8 +49,8 @@ GLuint compile_shader(const std::string& filepath, GLenum type) {
 }
 
 GLuint link_shaders(GLuint vertex_shader, GLuint fragment_shader) {
-	GLuint program = glCreateProgram();
-	glAttachShader(program, vertex_shader);
+    GLuint program = glCreateProgram();
+    glAttachShader(program, vertex_shader);
 	glAttachShader(program, fragment_shader);
 	glLinkProgram(program);
 
@@ -71,6 +73,10 @@ GLuint link_shaders(GLuint vertex_shader, GLuint fragment_shader) {
 	glDeleteShader(fragment_shader);
 
 	return program;
+}
+
+void set_shader_uniform(GLuint program, const std::string& uniform, const glm::mat4x4& value) {
+    glUniformMatrix4f(glGetUniformLocation(program, uniform.c_str()), glm::value_ptr(value));
 }
 
 #endif

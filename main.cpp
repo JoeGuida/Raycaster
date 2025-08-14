@@ -5,6 +5,7 @@
 #include <glcorearb.h>
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "gl_loader.hpp"
 #include "shader.hpp"
@@ -149,6 +150,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     constexpr wchar_t window_title[] = L"Raycaster";
     constexpr int width = 1280;
     constexpr int height = 720;
+    constexpr double ASPECT_RATIO = width / static_cast<double>(height);
     
     if (!InitializeWindow(hInstance, nShowCmd, width, height, window_name, window_title)) {
         MessageBox(0, L"Window Initialization - Failed", L"Error", MB_OK);
@@ -189,10 +191,14 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         rectangles.sizes.push_back(size);
     }
 
-    GLuint vertex_shader = compile_shader("src/shaders/default.vert", GL_VERTEX_SHADER);
-    GLuint fragment_shader = compile_shader("src/shaders/default.frag", GL_FRAGMENT_SHADER);
+    std::string shader_path = "C:/Users/JoeGu/source/repos/Raycaster/src/shaders/";
+    GLuint vertex_shader = compile_shader(shader_path + "default.vert", GL_VERTEX_SHADER);
+    GLuint fragment_shader = compile_shader(shader_path + "default.frag", GL_FRAGMENT_SHADER);
     GLuint shader_program = link_shaders(vertex_shader, fragment_shader);
 
+    glm::mat4 projection = glm::ortho(-ASPECT_RATIO, ASPECT_RATIO, 1.0, -1.0, 0.001, 100.0);
+    set_shader_uniform(shader_program, "projection", projection);
+    
     Update(hwnd, shader_program, rectangles);
 
     return 0;
