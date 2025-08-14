@@ -189,37 +189,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         rectangles.sizes.push_back(size);
     }
 
-    std::ifstream vertex_shader_file("src/shaders/default.vert");
-    std::ifstream fragment_shader_file("src/shaders/default.frag");
-    if(!vertex_shader_file) {
-        std::cerr << std::format("ERROR READING FILE :: VERTEX SHADER") << std::endl;
-    }
-
-    if(!fragment_shader_file) {
-        std::cerr << std::format("ERROR READING FILE :: FRAGMENT SHADER") << std::endl;
-    }
-
-    vertex_shader_file.seekg(0, std::ios::end);
-    fragment_shader_file.seekg(0, std::ios::end);
-
-    size_t v_size = vertex_shader_file.tellg();
-    size_t f_size = fragment_shader_file.tellg();
-
-    vertex_shader_file.seekg(0);
-    fragment_shader_file.seekg(0);
-
-    std::string vertex_buffer(v_size, '\0');
-    std::string fragment_buffer(f_size, '\0');
-
-    vertex_shader_file.read(&vertex_buffer[0], v_size);
-    fragment_shader_file.read(&fragment_buffer[0], f_size);
-
-    std::string_view vertex_shader_code(vertex_buffer);
-    std::string_view fragment_shader_code(fragment_buffer);
-
-    Shader shader = {};
-    GLuint vertex_shader = compile_shader(vertex_shader_code, GL_VERTEX_SHADER);
-    GLuint fragment_shader = compile_shader(fragment_shader_code, GL_FRAGMENT_SHADER);
+    GLuint vertex_shader = compile_shader("src/shaders/default.vert", GL_VERTEX_SHADER);
+    GLuint fragment_shader = compile_shader("src/shaders/default.frag", GL_FRAGMENT_SHADER);
     GLuint shader_program = link_shaders(vertex_shader, fragment_shader);
 
     Update(hwnd, shader_program, rectangles);

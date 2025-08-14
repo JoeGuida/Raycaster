@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <format>
+#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -12,26 +13,37 @@ struct Shader {
 	uint32_t id;
 };
 
-GLuint compile_shader(const std::string_view& src, GLenum type) {
-	uint32_t shader = glCreateShader(type);
-    const char* s = src.data();
-	glShaderSource(shader, 1, &s, nullptr);
-	glCompileShader(shader);
+GLuint compile_shader(const std::string& filepath, GLenum type) {
+    std::ifstream shader_file(filepath);
+    if(!shader_file) {
+        std::cerr << std::format("ERROR READING FILE :: {}", filepath) << std::endl;
+    }
+
+    shader_file.seekg(0, std::ios::end);
+    size_t size = shader_file.tellg();
+    shader_file.seekg(0);
+    std::string buffer(size, '\0');
+    shader_file.read(&buffer[0], size);
+
+	uint32_t id = glCreateShader(type);
+    const char* s = buffer.data();
+	glShaderSource(id, 1, &s, nullptr);
+	glCompileShader(id);
 
 	GLint success;
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+	glGetShaderiv(id, GL_COMPILE_STATUS, &success);
 	if (!success) {
 		GLint logLength = 0;
-		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
+		glGetShaderiv(id, GL_INFO_LOG_LENGTH, &logLength);
 		std::string log(logLength, ' ');
-		glGetShaderInfoLog(shader, logLength, nullptr, &log[0]);
+		glGetShaderInfoLog(id, logLength, nullptr, &log[0]);
 
-		std::cerr << std::format("Vertex Shader Compilation Failed! :: {} {}", type, log) << std::endl;
-		glDeleteShader(shader);
+		std::cerr << std::format("Shader Compilation Failed! :: {} {}", type, log) << std::endl;
+		glDeleteShader(id);
 		return 0;
 	}
 
-	return shader;
+	return id; 
 }
 
 GLuint link_shaders(GLuint vertex_shader, GLuint fragment_shader) {
