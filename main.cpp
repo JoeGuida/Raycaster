@@ -148,7 +148,7 @@ void Update(HWND hwnd, GLuint shader_program, const rc::Rectangle& rectangles) {
                 glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
                 glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
                 glEnableVertexAttribArray(0);
-                set_shader_uniform(shader_program, "color", glm::vec3(1.0f, 0.0f, 0.0f));
+                set_shader_uniform(shader_program, "color", glm::vec3(0.25f, 0.0f, 0.0f));
                 glm::mat4 model(1.0f);
                 set_shader_uniform(shader_program, "model", model);
 
@@ -214,12 +214,13 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     GLuint vertex_shader = compile_shader(shader_path + "default.vert", GL_VERTEX_SHADER);
     GLuint fragment_shader = compile_shader(shader_path + "default.frag", GL_FRAGMENT_SHADER);
     GLuint shader_program = link_shaders(vertex_shader, fragment_shader);
+    glUseProgram(shader_program);
 
     glm::mat4 projection = glm::ortho(-ASPECT_RATIO, ASPECT_RATIO, -1.0, 1.0, 0.001, 100.0);
     set_shader_uniform(shader_program, "projection", projection);
-
+    
     glm::mat4 view = glm::lookAt(
-        glm::vec3(0.0f, 0.0f, 1.0f), 
+        glm::vec3(0.0f, 0.0f, 3.0f), 
         glm::vec3(0.0f, 0.0f, -1.0f), 
         glm::vec3(0.0f, 1.0f, 0.0f));
     set_shader_uniform(shader_program, "view", view);
