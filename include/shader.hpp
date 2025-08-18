@@ -76,7 +76,7 @@ GLuint link_shaders(GLuint vertex_shader, GLuint fragment_shader) {
 }
 
 void set_shader_uniform(GLuint program, const std::string& uniform, const glm::mat4x4& value) {
-    glUniformMatrix4f(glGetUniformLocation(program, uniform.c_str()), glm::value_ptr(value));
+    glUniformMatrix4fv(glGetUniformLocation(program, uniform.c_str()), 1, GL_FALSE, glm::value_ptr(value));
 }
 
 #endif
