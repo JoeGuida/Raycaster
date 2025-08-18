@@ -4,6 +4,11 @@
 #include <Windows.h>
 #include <glcorearb.h>
 
+#define WGL_CONTEXT_MAJOR_VERSION_ARB       0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB       0x2092
+#define WGL_CONTEXT_PROFILE_MASK_ARB        0x9126
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB    0x00000001
+
 typedef void (APIENTRYP PFNGLATTACHSHADERPROC) (GLuint program, GLuint shader);
 typedef void (APIENTRYP PFNGLBINDBUFFERPROC) (GLenum target, GLuint buffer);
 typedef void (APIENTRYP PFNGLBINDVERTEXARRAYPROC) (GLuint array);
@@ -28,6 +33,8 @@ typedef void (APIENTRYP PFNGLUNIFORM3FPROC) (GLint location, GLfloat v0, GLfloat
 typedef void (APIENTRYP PFNGLUSEPROGRAMPROC) (GLuint program);
 typedef void (APIENTRYP PFNGLVERTEXATTRIBPOINTERPROC) (GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void* pointer);
 typedef void (APIENTRYP PFNGLUNIFORMMATRIX4FVPROC) (GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
+typedef void (APIENTRYP PFNGLUNIFORM3FVPROC) (GLint location, GLsizei count, const GLfloat *value);
+typedef HGLRC (WINAPI * PFNWGLCREATECONTEXTATTRIBSARBPROC) (HDC hDC, HGLRC hShareContext, const int *attribList);
 
 PFNGLATTACHSHADERPROC glAttachShader = nullptr;
 PFNGLBINDBUFFERPROC glBindBuffer = nullptr;
@@ -53,6 +60,8 @@ PFNGLUNIFORM3FPROC glUniform3f = nullptr;
 PFNGLUSEPROGRAMPROC glUseProgram = nullptr;
 PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer = nullptr;
 PFNGLUNIFORMMATRIX4FVPROC glUniformMatrix4fv = nullptr;
+PFNGLUNIFORM3FVPROC glUniform3fv = nullptr;
+PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = nullptr;
 
 void LoadGLFunctions() {
 	glAttachShader = (PFNGLATTACHSHADERPROC)wglGetProcAddress("glAttachShader");
@@ -79,6 +88,8 @@ void LoadGLFunctions() {
 	glUseProgram = (PFNGLUSEPROGRAMPROC)wglGetProcAddress("glUseProgram");
 	glVertexAttribPointer = (PFNGLVERTEXATTRIBPOINTERPROC)wglGetProcAddress("glVertexAttribPointer");
     glUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FVPROC)wglGetProcAddress("glUniformMatrix4fv");
+    glUniform3fv = (PFNGLUNIFORM3FVPROC)wglGetProcAddress("glUniform3fv");
+    wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
 }
 
 #endif

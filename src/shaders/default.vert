@@ -10,6 +10,6 @@ uniform vec3 color;
 out vec3 vertex_color;
 
 void main() {
-    gl_Position = projection * view * model * vec4(pos, 1.0);
+    gl_Position = model * vec4(pos, 1.0);
     vertex_color = color;
 }

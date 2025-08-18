@@ -81,11 +81,28 @@ bool InitializeWindow(HINSTANCE hInstance, int ShowWnd, int width, int height, c
 
     int pixelFormat = ChoosePixelFormat(hdc, &pfd);
     SetPixelFormat(hdc, pixelFormat, &pfd);
-    hglrc = wglCreateContext(hdc);
+    HGLRC temp_context = wglCreateContext(hdc);
+    wglMakeCurrent(hdc, temp_context);
+
+    LoadGLFunctions();
+
+    int attribs[] = {
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+        WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+        0
+    };
+
+    hglrc = wglCreateContextAttribsARB(hdc, 0, attribs);
+
+    wglMakeCurrent(nullptr, nullptr);
+    wglDeleteContext(temp_context);
     wglMakeCurrent(hdc, hglrc);
 
     ShowWindow(hwnd, ShowWnd);
     UpdateWindow(hwnd);
+
+    glEnable(GL_DEPTH_TEST);
 
     return true;
 }
@@ -131,7 +148,10 @@ void Update(HWND hwnd, GLuint shader_program, const rc::Rectangle& rectangles) {
                 glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
                 glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
                 glEnableVertexAttribArray(0);
-                glUniform3f(glGetUniformLocation(shader_program, "color"), 1.0f, 0.0f, 0.0f);
+                set_shader_uniform(shader_program, "color", glm::vec3(1.0f, 0.0f, 0.0f));
+                glm::mat4 model(1.0f);
+                set_shader_uniform(shader_program, "model", model);
+
                 glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
             }
 
@@ -163,7 +183,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     glGenBuffers(1, &vbo);
     glGenBuffers(1, &ebo);
 
-    
     constexpr std::string_view map = 
     "0000222222220000"\
     "1              0"\
@@ -185,10 +204,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     rc::Rectangle rectangles;
     constexpr float size = 2.0f / 16;
     for(int i = 0; i < map.size(); i++) {
-        if(map[i] - '0' == ' ') { continue; }
+        if(map[i] == ' ') { continue; }
         glm::vec3 pos = glm::vec3(-1.0f + size / 2.0f, 1.0f - size / 2.0f, 0.0f);
-        rectangles.positions.push_back(pos);
-        rectangles.sizes.push_back(size);
+        rectangles.positions.push_back(glm::vec3(0.0f));
+        rectangles.sizes.push_back(0.5f);
     }
 
     std::string shader_path = "C:/Users/JoeGu/source/repos/Raycaster/src/shaders/";
@@ -196,8 +215,14 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     GLuint fragment_shader = compile_shader(shader_path + "default.frag", GL_FRAGMENT_SHADER);
     GLuint shader_program = link_shaders(vertex_shader, fragment_shader);
 
-    glm::mat4 projection = glm::ortho(-ASPECT_RATIO, ASPECT_RATIO, 1.0, -1.0, 0.001, 100.0);
+    glm::mat4 projection = glm::ortho(-ASPECT_RATIO, ASPECT_RATIO, -1.0, 1.0, 0.001, 100.0);
     set_shader_uniform(shader_program, "projection", projection);
+
+    glm::mat4 view = glm::lookAt(
+        glm::vec3(0.0f, 0.0f, 1.0f), 
+        glm::vec3(0.0f, 0.0f, -1.0f), 
+        glm::vec3(0.0f, 1.0f, 0.0f));
+    set_shader_uniform(shader_program, "view", view);
     
     Update(hwnd, shader_program, rectangles);
 
