@@ -24,7 +24,7 @@ uint32_t ebo;
 namespace rc {
     struct Rectangle {
         std::vector<glm::vec3> positions;
-        std::vector<float> sizes;
+        std::vector<glm::vec3> sizes;
     };
 };
 
@@ -133,13 +133,13 @@ void Update(HWND hwnd, GLuint shader_program, const rc::Rectangle& rectangles) {
             glUseProgram(shader_program);
 
             for(int i = 0; i < rectangles.positions.size(); i++) {
-                const float half_size = rectangles.sizes[i] / 2.0f;
+                const glm::vec3 half_size = rectangles.sizes[i] / 2.0f;
                 const glm::vec3 pos = rectangles.positions[i];
                 std::array data = {
-                    pos.x - half_size, pos.y + half_size, 0.0f,
-                    pos.x + half_size, pos.y + half_size, 0.0f,
-                    pos.x + half_size, pos.y - half_size, 0.0f,
-                    pos.x - half_size, pos.y - half_size, 0.0f
+                    pos.x - half_size.x, pos.y + half_size.y, 0.0f,
+                    pos.x + half_size.x, pos.y + half_size.y, 0.0f,
+                    pos.x + half_size.x, pos.y - half_size.y, 0.0f,
+                    pos.x - half_size.x, pos.y - half_size.y, 0.0f
                 };
 
                 glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -150,6 +150,7 @@ void Update(HWND hwnd, GLuint shader_program, const rc::Rectangle& rectangles) {
                 glEnableVertexAttribArray(0);
                 set_shader_uniform(shader_program, "color", glm::vec3(0.25f, 0.0f, 0.0f));
                 glm::mat4 model(1.0f);
+                model = glm::translate(model, rectangles.positions[i]);
                 set_shader_uniform(shader_program, "model", model);
 
                 glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
@@ -183,6 +184,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     glGenBuffers(1, &vbo);
     glGenBuffers(1, &ebo);
 
+    constexpr int map_w = 16;
+    constexpr int map_h = 16;
     constexpr std::string_view map = 
     "0000222222220000"\
     "1              0"\
@@ -206,8 +209,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     for(int i = 0; i < map.size(); i++) {
         if(map[i] == ' ') { continue; }
         glm::vec3 pos = glm::vec3(-1.0f + size / 2.0f, 1.0f - size / 2.0f, 0.0f);
-        rectangles.positions.push_back(glm::vec3(0.0f));
-        rectangles.sizes.push_back(0.5f);
+        rectangles.positions.push_back(glm::vec3(
+                    i % map_w * (2.0f / map_w), 
+                    1.0f - i / map_h * (2.0f / map_h), 
+                    0.0f));
+        rectangles.sizes.push_back(glm::vec3(2.0f / map_w, 2.0f / map_h, 0.0f));
     }
 
     std::string shader_path = "C:/Users/JoeGu/source/repos/Raycaster/src/shaders/";
