@@ -9,7 +9,7 @@
 #include <format>
 #include <iostream>
 
-GLuint compile_shader(const std::string& filepath, GLenum type) {
+uint32_t compile_shader(const std::string& filepath, GLenum type) {
     std::ifstream shader_file(filepath);
     if(!shader_file) {
         std::cerr << std::format("ERROR READING FILE :: {}", filepath) << std::endl;
@@ -21,7 +21,7 @@ GLuint compile_shader(const std::string& filepath, GLenum type) {
     std::string buffer(size, '\0');
     shader_file.read(&buffer[0], size);
 
-    GLuint id = glCreateShader(type);
+    uint32_t id = glCreateShader(type);
     const char* s = buffer.data();
 	glShaderSource(id, 1, &s, nullptr);
 	glCompileShader(id);
@@ -42,8 +42,8 @@ GLuint compile_shader(const std::string& filepath, GLenum type) {
 	return id; 
 }
 
-GLuint link_shaders(GLuint vertex_shader, GLuint fragment_shader) {
-    GLuint program = glCreateProgram();
+uint32_t link_shaders(uint32_t vertex_shader, uint32_t fragment_shader) {
+    uint32_t program = glCreateProgram();
     glAttachShader(program, vertex_shader);
 	glAttachShader(program, fragment_shader);
 	glLinkProgram(program);
@@ -69,10 +69,10 @@ GLuint link_shaders(GLuint vertex_shader, GLuint fragment_shader) {
 	return program;
 }
 
-void set_shader_uniform(GLuint program, const std::string& uniform, const glm::mat4x4& value) {
+void set_shader_uniform(uint32_t program, const std::string& uniform, const glm::mat4x4& value) {
     glUniformMatrix4fv(glGetUniformLocation(program, uniform.c_str()), 1, GL_FALSE, glm::value_ptr(value));
 }
 
-void set_shader_uniform(GLuint program, const std::string& uniform, const glm::vec3& value) {
+void set_shader_uniform(uint32_t program, const std::string& uniform, const glm::vec3& value) {
     glUniform3fv(glGetUniformLocation(program, uniform.c_str()), 1, glm::value_ptr(value));
 }
