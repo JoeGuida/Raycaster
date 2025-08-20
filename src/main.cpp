@@ -11,8 +11,7 @@
 #include "shader.hpp"
 
 #include <array>
-#include <fstream>
-#include <string_view>
+#include <vector>
 
 HWND hwnd;
 HGLRC hglrc;
@@ -29,6 +28,13 @@ namespace rc {
 };
 
 bool is_running = true;
+
+constexpr float minimum_x_value = -1.0f;
+constexpr float maximum_x_value = 1.0f;
+constexpr float minimum_y_value = -1.0f;
+constexpr float maximum_y_value = 1.0f;
+constexpr float x_range = 2.0f;
+constexpr float y_range = 2.0f;
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
@@ -126,7 +132,7 @@ void Update(HWND hwnd, GLuint shader_program, const rc::Rectangle& rectangles) {
 
             constexpr std::array<uint32_t, 6> indices = {
                 0, 1, 2, 
-                0, 2, 3
+                1, 3, 2
             };
 
             glBindVertexArray(vao);
@@ -136,10 +142,10 @@ void Update(HWND hwnd, GLuint shader_program, const rc::Rectangle& rectangles) {
                 const glm::vec3 half_size = rectangles.sizes[i] / 2.0f;
                 const glm::vec3 pos = rectangles.positions[i];
                 std::array data = {
-                    pos.x - half_size.x, pos.y + half_size.y, 0.0f,
-                    pos.x + half_size.x, pos.y + half_size.y, 0.0f,
-                    pos.x + half_size.x, pos.y - half_size.y, 0.0f,
-                    pos.x - half_size.x, pos.y - half_size.y, 0.0f
+                    -half_size.x, +half_size.y, 0.0f,
+                    +half_size.x, +half_size.y, 0.0f,
+                    -half_size.x, -half_size.y, 0.0f,
+                    +half_size.x, -half_size.y, 0.0f
                 };
 
                 glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -209,11 +215,14 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     for(int i = 0; i < map.size(); i++) {
         if(map[i] == ' ') { continue; }
         glm::vec3 pos = glm::vec3(-1.0f + size / 2.0f, 1.0f - size / 2.0f, 0.0f);
+        glm::vec3 rect_size(x_range / map_w, y_range / map_h, 0.0f);
+        float x_index = i % map_w;
+        float y_index = i / map_h;
         rectangles.positions.push_back(glm::vec3(
-                    i % map_w * (2.0f / map_w), 
-                    1.0f - i / map_h * (2.0f / map_h), 
+                    minimum_x_value + (rect_size.x / 2.0f) + x_index * rect_size.x, 
+                    maximum_y_value - (rect_size.y / 2.0f) - y_index * rect_size.y, 
                     0.0f));
-        rectangles.sizes.push_back(glm::vec3(2.0f / map_w, 2.0f / map_h, 0.0f));
+        rectangles.sizes.push_back(glm::vec3(x_range / map_w, y_range / map_h, 0.0f));
     }
 
     std::string shader_path = "C:/Users/JoeGu/source/repos/Raycaster/src/shaders/";
