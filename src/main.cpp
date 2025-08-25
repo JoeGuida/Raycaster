@@ -9,8 +9,13 @@
 
 #include "gl_loader.hpp"
 #include "rect.hpp"
+#include "renderer.hpp"
 #include "shader.hpp"
 #include "window.hpp"
+
+#include <algorithm>
+#include <array>
+#include <iostream>
 
 HWND hwnd;
 HGLRC hglrc;
@@ -29,11 +34,13 @@ constexpr float x_range = 2.0f;
 constexpr float y_range = 2.0f;
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
+    // Attach a Console
     AllocConsole();
     FILE* fp;
     freopen_s(&fp, "CONOUT$", "w", stdout);
     freopen_s(&fp, "CONOUT$", "w", stderr);
 
+    // Initial Window Parameters
     constexpr wchar_t window_name[] = L"Default Window Class";
     constexpr wchar_t window_title[] = L"Raycaster";
     constexpr int width = 1280;
@@ -70,21 +77,38 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     "0002222222200000";
 
     Rect rectangles;
-    constexpr float size = 2.0f / 16;
+    size_t non_space_tiles = std::count_if(map.begin(), map.end(), [](char c){ return c != ' '; });
+    rectangles.vertices.reserve(non_space_tiles * 12);
     for(int i = 0; i < map.size(); i++) {
         if(map[i] == ' ') { continue; }
-        glm::vec3 pos = glm::vec3(-1.0f + size / 2.0f, 1.0f - size / 2.0f, 0.0f);
-        glm::vec3 rect_size(x_range / map_w, y_range / map_h, 0.0f);
+
+        const glm::vec3 rect_size(x_range / map_w, y_range / map_h, 0.0f);
+        const glm::vec3 half_size(rect_size.x / 2.0f, rect_size.y / 2.0f, 0.0f);
+
         float x_index = i % map_w;
-        float y_index = i / map_h;
+        float y_index = i / map_w;
+
         rectangles.positions.push_back(glm::vec3(
                     minimum_x_value + (rect_size.x / 2.0f) + x_index * rect_size.x, 
                     maximum_y_value - (rect_size.y / 2.0f) - y_index * rect_size.y, 
                     0.0f));
-        rectangles.sizes.push_back(glm::vec3(x_range / map_w, y_range / map_h, 0.0f));
+        rectangles.sizes.push_back(glm::vec3(rect_size.x, rect_size.y, 0.0f));
+        const std::array<float, 12> vertices = { 
+            -half_size.x,  half_size.y, 0.0f,
+             half_size.x,  half_size.y, 0.0f,
+            -half_size.x, -half_size.y, 0.0f,
+             half_size.x, -half_size.y, 0.0f
+        };
+
+        rectangles.vertices.insert(rectangles.vertices.end(), vertices.begin(), vertices.end());
     }
 
-    std::string shader_path = "C:/Users/JoeGu/source/repos/Raycaster/src/shaders/";
+    std::string shader_path = std::getenv("SHADER_PATH");    
+    if(shader_path.empty()) {
+        std::cerr << "Error: SHADER_PATH not set!" << std::endl; 
+        return -1;
+    }
+
     uint32_t vertex_shader = compile_shader(shader_path + "default.vert", GL_VERTEX_SHADER);
     uint32_t fragment_shader = compile_shader(shader_path + "default.frag", GL_FRAGMENT_SHADER);
     uint32_t shader_program = link_shaders(vertex_shader, fragment_shader);
@@ -99,6 +123,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         glm::vec3(0.0f, 1.0f, 0.0f));
     set_shader_uniform(shader_program, "view", view);
     
+    Renderer renderer;
     loop_until_quit(hwnd, renderer.id);
 
     return 0;

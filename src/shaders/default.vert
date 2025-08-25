@@ -1,8 +1,10 @@
 #version 330 core
 
 layout (location = 0) in vec3 pos;
+layout(std430, binding = 0) buffer instance_buffer {
+    vec3 positions[];
+}
 
-uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 uniform vec3 color;
@@ -10,6 +12,7 @@ uniform vec3 color;
 out vec3 vertex_color;
 
 void main() {
-    gl_Position = projection * view * model * vec4(pos, 1.0);
+    vec3 instance_pos = positions[gl_InstanceID];
+    gl_Position = projection * view * vec4(pos + instance_pos, 1.0);
     vertex_color = color;
 }

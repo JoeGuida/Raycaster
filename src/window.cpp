@@ -57,7 +57,7 @@ bool initialize_window(HINSTANCE hInstance, int ShowWnd, int width, int height, 
     LoadGLFunctions();
 
     int attribs[] = {
-        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
         WGL_CONTEXT_MINOR_VERSION_ARB, 3,
         WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
         0
@@ -77,7 +77,7 @@ bool initialize_window(HINSTANCE hInstance, int ShowWnd, int width, int height, 
     return true;
 }
 
-void loop_until_quit(HWND hwnd, uint32_t renderer_id) {
+void loop_until_quit(HWND hwnd, uint32_t renderer) {
     MSG msg;
     ZeroMemory(&msg, sizeof(MSG));
     HDC hdc = GetDC(hwnd);
@@ -96,7 +96,3 @@ void loop_until_quit(HWND hwnd, uint32_t renderer_id) {
         }
     }
 }
-
-/*
-}
-*/

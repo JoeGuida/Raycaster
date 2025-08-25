@@ -1,47 +1,53 @@
 #include "renderer.hpp"
+#include <cstdint>
 
 void render_update(uint32_t id) {
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    constexpr std::array<uint32_t, 6> indices = {
-        0, 1, 2, 
-        1, 3, 2
-    };
-
-    glBindVertexArray(vao);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    for(int i = 0; i < rectangles.positions.size(); i++) {
-        const glm::vec3 half_size = rectangles.sizes[i] / 2.0f;
-        const glm::vec3 pos = rectangles.positions[i];
-        std::array data = {
-            -half_size.x, +half_size.y, 0.0f,
-            +half_size.x, +half_size.y, 0.0f,
-            -half_size.x, -half_size.y, 0.0f,
-            +half_size.x, -half_size.y, 0.0f
-        };
-
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-        
-        glUseProgram(shader_program);
-        set_shader_uniform(shader_program, "color", glm::vec3(0.25f, 0.0f, 0.0f));
-        glm::mat4 model(1.0f);
-        model = glm::translate(model, rectangles.positions[i]);
-        set_shader_uniform(shader_program, "model", model);
-
-        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+    for(auto& vertex : renderer.static_buffer_data) {
+        draw(vao, vbo, ebo, num_indices, num_elements);
     }
 }
 
-void setup_rect() {
+void setup_rect(std::span<float> vertices, std::span<float> indices, uint32_t, vao, uint32_t vbo, uint32_t ebo) {
     glBindVertexArray(vao);
-    glUseProgram(shader_program);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), data.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size_bytes(), vertices.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size_bytes(), indices.data(), GL_STATIC_DRAW);
+}
+
+void setup_vao(uint32_t vao, uint32_t vbo, uint32_t ssbo) {
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+}
+
+void setup(uint32_t vao, uint32_t vbo, uint32_t ebo, uint32_t ssbo, std::span<float> vertices, std::span<uint32_t> indices, std::span<glm::vec3> positions) {
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, positions.size() * sizeof(glm::vec3), positions.data(), GL_STATIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssbo);
 }
+
+void draw(uint32_t vao, uint32_t vbo, uint32_t ebo, uint32_t num_indices, uint32_t num_elements) {
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glDrawElementsInstanced(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, 0, num_elements); 
+}
+
+
+
+
+
+
+
+
+
