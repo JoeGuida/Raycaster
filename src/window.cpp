@@ -5,6 +5,7 @@
 #include <glcorearb.h>
 
 #include "gl_loader.hpp"
+#include "renderer.hpp"
 
 LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
@@ -24,7 +25,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-bool initialize_window(HWND hwnd, HINSTANCE hInstance, int ShowWnd, int width, int height, const wchar_t* windowName, const wchar_t* windowTitle) {
+bool initialize_window(Window& window, HINSTANCE hInstance, int ShowWnd, int width, int height, const wchar_t* windowName, const wchar_t* windowTitle) {
     WNDCLASSEX wc;
     wc.cbSize = sizeof(WNDCLASSEX);
     wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -44,21 +45,21 @@ bool initialize_window(HWND hwnd, HINSTANCE hInstance, int ShowWnd, int width, i
         return false;
     }
 
-    hwnd = CreateWindowEx(NULL, windowName, windowTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, NULL, NULL, hInstance, NULL);
-    if (!hwnd) {
+    window.hwnd = CreateWindowEx(NULL, windowName, windowTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, NULL, NULL, hInstance, NULL);
+    if (!window.hwnd) {
         MessageBox(NULL, L"Error creating window", L"Error", MB_OK | MB_ICONERROR);
         return false;
     }
 
-    HDC hdc = GetDC(hwnd);
+    window.hdc = GetDC(window.hwnd);
     PIXELFORMATDESCRIPTOR pfd = {
         sizeof(PIXELFORMATDESCRIPTOR), 1, PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER, PFD_TYPE_RGBA, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, 8, 0, PFD_MAIN_PLANE, 0, 0, 0, 0
     };
 
-    int pixelFormat = ChoosePixelFormat(hdc, &pfd);
-    SetPixelFormat(hdc, pixelFormat, &pfd);
-    HGLRC temp_context = wglCreateContext(hdc);
-    wglMakeCurrent(hdc, temp_context);
+    int pixelFormat = ChoosePixelFormat(window.hdc, &pfd);
+    SetPixelFormat(window.hdc, pixelFormat, &pfd);
+    HGLRC temp_context = wglCreateContext(window.hdc);
+    wglMakeCurrent(window.hdc, temp_context);
 
     LoadGLFunctions();
 
@@ -69,25 +70,24 @@ bool initialize_window(HWND hwnd, HINSTANCE hInstance, int ShowWnd, int width, i
         0
     };
 
-    hglrc = wglCreateContextAttribsARB(hdc, 0, attribs);
+    window.hglrc = wglCreateContextAttribsARB(window.hdc, 0, attribs);
 
     wglMakeCurrent(nullptr, nullptr);
     wglDeleteContext(temp_context);
-    wglMakeCurrent(hdc, hglrc);
+    wglMakeCurrent(window.hdc, window.hglrc);
 
-    ShowWindow(hwnd, ShowWnd);
-    UpdateWindow(hwnd);
+    ShowWindow(window.hwnd, ShowWnd);
+    UpdateWindow(window.hwnd);
 
     glEnable(GL_DEPTH_TEST);
 
     return true;
 }
 
-void loop_until_quit(HWND hwnd, uint32_t renderer) {
+void loop_until_quit(Window& window, Renderer& renderer) {
     MSG msg;
     ZeroMemory(&msg, sizeof(MSG));
-    HDC hdc = GetDC(hwnd);
-    while (is_running) {
+    while (true) {
         if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
             if (msg.message == WM_QUIT) {
                 break;
@@ -97,8 +97,8 @@ void loop_until_quit(HWND hwnd, uint32_t renderer) {
             DispatchMessage(&msg);
         }
         else {
-            render_update(renderer_id);
-            SwapBuffers(hdc);
+            render_update(renderer);
+            SwapBuffers(window.hdc);
         }
     }
 }

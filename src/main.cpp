@@ -1,5 +1,3 @@
-#define UNICODE
-
 #include <Windows.h>
 #include <gl/GL.h>
 #include <glcorearb.h>
@@ -47,14 +45,15 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     constexpr int height = 720;
     constexpr double ASPECT_RATIO = width / static_cast<double>(height);
     
-    if (!initialize_window(hwnd, hInstance, nShowCmd, width, height, window_name, window_title)) {
+    Window window;
+    if (!initialize_window(window, hInstance, nShowCmd, width, height, window_name, window_title)) {
         MessageBox(0, L"Window Initialization - Failed", L"Error", MB_OK);
         return 0;
     }
 
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
+
+    Renderer renderer;
+    initialize_buffers(renderer);
 
     constexpr int map_w = 16;
     constexpr int map_h = 16;
@@ -77,40 +76,42 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     "0002222222200000";
 
     Rect rectangles;
+
     size_t non_space_tiles = std::count_if(map.begin(), map.end(), [](char c){ return c != ' '; });
-    rectangles.vertices.reserve(non_space_tiles * 12);
+    rectangles.positions.reserve(non_space_tiles);
+
+    const glm::vec3 rect_size(x_range / map_w, y_range / map_h, 0.0f);
+    const glm::vec3 half_size(rect_size.x / 2.0f, rect_size.y / 2.0f, 0.0f);
+    rectangles.vertices = { 
+        -half_size.x,  half_size.y, 0.0f,
+         half_size.x,  half_size.y, 0.0f,
+        -half_size.x, -half_size.y, 0.0f,
+         half_size.x, -half_size.y, 0.0f
+    };
+
     for(int i = 0; i < map.size(); i++) {
         if(map[i] == ' ') { continue; }
-
-        const glm::vec3 rect_size(x_range / map_w, y_range / map_h, 0.0f);
-        const glm::vec3 half_size(rect_size.x / 2.0f, rect_size.y / 2.0f, 0.0f);
 
         float x_index = i % map_w;
         float y_index = i / map_w;
 
-        rectangles.positions.push_back(glm::vec3(
-                    minimum_x_value + (rect_size.x / 2.0f) + x_index * rect_size.x, 
-                    maximum_y_value - (rect_size.y / 2.0f) - y_index * rect_size.y, 
-                    0.0f));
-        rectangles.sizes.push_back(glm::vec3(rect_size.x, rect_size.y, 0.0f));
-        const std::array<float, 12> vertices = { 
-            -half_size.x,  half_size.y, 0.0f,
-             half_size.x,  half_size.y, 0.0f,
-            -half_size.x, -half_size.y, 0.0f,
-             half_size.x, -half_size.y, 0.0f
-        };
+        float x = minimum_x_value + (rect_size.x / 2.0f) + x_index * rect_size.x; 
+        float y = maximum_y_value - (rect_size.y / 2.0f) - y_index * rect_size.y; 
 
-        rectangles.vertices.insert(rectangles.vertices.end(), vertices.begin(), vertices.end());
+        rectangles.positions.push_back(glm::vec4(x, y, 0.0f, 0.0f)); 
     }
 
-    std::string shader_path = std::getenv("SHADER_PATH");    
-    if(shader_path.empty()) {
+    setup_buffers(renderer);
+    setup_instanced_elements(renderer, rectangles.vertices, rectangles.indices, rectangles.positions, rectangles.indices.size(), rectangles.positions.size());
+
+    const char* shader_path = std::getenv("SHADER_PATH");    
+    if(!shader_path) {
         std::cerr << "Error: SHADER_PATH not set!" << std::endl; 
         return -1;
     }
 
-    uint32_t vertex_shader = compile_shader(shader_path + "default.vert", GL_VERTEX_SHADER);
-    uint32_t fragment_shader = compile_shader(shader_path + "default.frag", GL_FRAGMENT_SHADER);
+    uint32_t vertex_shader = compile_shader(std::string(shader_path) + "/default.vert", GL_VERTEX_SHADER);
+    uint32_t fragment_shader = compile_shader(std::string(shader_path) + "/default.frag", GL_FRAGMENT_SHADER);
     uint32_t shader_program = link_shaders(vertex_shader, fragment_shader);
     glUseProgram(shader_program);
 
@@ -123,8 +124,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         glm::vec3(0.0f, 1.0f, 0.0f));
     set_shader_uniform(shader_program, "view", view);
     
-    Renderer renderer;
-    loop_until_quit(hwnd, renderer.id);
+    loop_until_quit(window, renderer);
 
+    std::cin.get();
     return 0;
 }
