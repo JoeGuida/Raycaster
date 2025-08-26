@@ -3,7 +3,10 @@
 
 #include <glm/vec3.hpp>
 
+#include <array>
+#include <cstdint>
 #include <span>
+#include <vector>
 
 struct Rect {
     std::vector<glm::vec3> positions;

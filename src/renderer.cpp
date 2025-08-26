@@ -1,16 +1,28 @@
 #include "renderer.hpp"
-#include <cstdint>
 
-void render_update(uint32_t id) {
+#include <Windows.h>
+#include <GL/GL.h>
+#include <glcorearb.h>
+#include <glm/vec3.hpp>
+
+#include "gl_loader.hpp"
+
+#include <cstdint>
+#include <span>
+
+void render_update(const Renderer& renderer) {
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    uint32_t num_indices = 6;
+    uint32_t num_elements = 1;
+
     for(auto& vertex : renderer.static_buffer_data) {
-        draw(vao, vbo, ebo, num_indices, num_elements);
+        draw(renderer.vao, renderer.vbo, renderer.ebo, num_indices, num_elements);
     }
 }
 
-void setup_rect(std::span<float> vertices, std::span<float> indices, uint32_t, vao, uint32_t vbo, uint32_t ebo) {
+void setup_rect(std::span<float> vertices, std::span<float> indices, uint32_t vao, uint32_t vbo, uint32_t ebo) {
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, vertices.size_bytes(), vertices.data(), GL_STATIC_DRAW);
@@ -42,12 +54,4 @@ void draw(uint32_t vao, uint32_t vbo, uint32_t ebo, uint32_t num_indices, uint32
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glDrawElementsInstanced(GL_TRIANGLES, num_indices, GL_UNSIGNED_INT, 0, num_elements); 
 }
-
-
-
-
-
-
-
-
 

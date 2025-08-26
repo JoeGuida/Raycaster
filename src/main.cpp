@@ -47,7 +47,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     constexpr int height = 720;
     constexpr double ASPECT_RATIO = width / static_cast<double>(height);
     
-    if (!initialize_window(hInstance, nShowCmd, width, height, window_name, window_title)) {
+    if (!initialize_window(hwnd, hInstance, nShowCmd, width, height, window_name, window_title)) {
         MessageBox(0, L"Window Initialization - Failed", L"Error", MB_OK);
         return 0;
     }

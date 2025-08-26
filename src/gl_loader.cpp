@@ -1,4 +1,5 @@
 #include "gl_loader.hpp"
+#include <wingdi.h>
 
 PFNGLATTACHSHADERPROC glAttachShader = nullptr;
 PFNGLBINDBUFFERPROC glBindBuffer = nullptr;
@@ -26,6 +27,8 @@ PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer = nullptr;
 PFNGLUNIFORMMATRIX4FVPROC glUniformMatrix4fv = nullptr;
 PFNGLUNIFORM3FVPROC glUniform3fv = nullptr;
 PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = nullptr;
+PFNGLBINDBUFFERBASEPROC glBindBufferBase = nullptr;
+PFNGLDRAWELEMENTSINSTANCEDPROC glDrawElementsInstanced = nullptr;
 
 void LoadGLFunctions() {
 	glAttachShader = (PFNGLATTACHSHADERPROC)wglGetProcAddress("glAttachShader");
@@ -54,4 +57,6 @@ void LoadGLFunctions() {
     glUniformMatrix4fv = (PFNGLUNIFORMMATRIX4FVPROC)wglGetProcAddress("glUniformMatrix4fv");
     glUniform3fv = (PFNGLUNIFORM3FVPROC)wglGetProcAddress("glUniform3fv");
     wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
+    glBindBufferBase = (PFNGLBINDBUFFERBASEPROC)wglGetProcAddress("glBindBufferBase");
+    glDrawElementsInstanced = (PFNGLDRAWELEMENTSINSTANCEDPROC)wglGetProcAddress("glDrawElementsInstanced");
 }

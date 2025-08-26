@@ -1,8 +1,8 @@
 #include "rect.hpp"
 
-#include <array>
+#include <glm/vec3.hpp>
+
 #include <span>
-#include <vector>
 
 void calculate_vertices(std::span<float> vertices, std::span<glm::vec3> sizes) {
     for(const auto& size : sizes) {
