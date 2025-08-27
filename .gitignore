@@ -7,3 +7,5 @@ include/KHR
 include/glcorearb.h
 include/windows.h
 include/glm
+data/
+log/

@@ -6,6 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "gl_loader.hpp"
+#include "map.hpp"
 #include "rect.hpp"
 #include "renderer.hpp"
 #include "shader.hpp"
@@ -14,6 +15,7 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <string>
 
 HWND hwnd;
 HGLRC hglrc;
@@ -32,11 +34,17 @@ constexpr float x_range = 2.0f;
 constexpr float y_range = 2.0f;
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
-    // Attach a Console
-    AllocConsole();
-    FILE* fp;
-    freopen_s(&fp, "CONOUT$", "w", stdout);
-    freopen_s(&fp, "CONOUT$", "w", stderr);
+    const char* shader_path = std::getenv("SHADER_PATH");
+    if(!shader_path) {
+        std::cerr << "Error: SHADER_PATH not set!" << std::endl;
+        return -1;
+    }
+
+    const char* map_path = std::getenv("MAP_PATH");
+    if(!map_path) {
+        std::cerr << "Error: MAP_PATH not set!" << std::endl;
+        return -1;
+    }
 
     // Initial Window Parameters
     constexpr wchar_t window_name[] = L"Default Window Class";
@@ -51,36 +59,18 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         return 0;
     }
 
-
     Renderer renderer;
     initialize_buffers(renderer);
 
-    constexpr int map_w = 16;
-    constexpr int map_h = 16;
-    constexpr std::string_view map = 
-    "0000222222220000"\
-    "1              0"\
-    "1      11111   0"\
-    "1     0        0"\
-    "0     0  1110000"\
-    "0     3        0"\
-    "0   10000      0"\
-    "0   0   11100  0"\
-    "0   0   0      0"\
-    "0   0   1  00000"\
-    "0       1      0"\
-    "2       1      0"\
-    "0       0      0"\
-    "0 0000000      0"\
-    "0              0"\
-    "0002222222200000";
+    Map map;
+    load_map_from_file(map, std::string(map_path) + "/map.txt");
 
     Rect rectangles;
 
-    size_t non_space_tiles = std::count_if(map.begin(), map.end(), [](char c){ return c != ' '; });
+    size_t non_space_tiles = std::count_if(map.data.begin(), map.data.end(), [](char c){ return c != ' '; });
     rectangles.positions.reserve(non_space_tiles);
 
-    const glm::vec3 rect_size(x_range / map_w, y_range / map_h, 0.0f);
+    const glm::vec3 rect_size(x_range / map.width, y_range / map.height, 0.0f);
     const glm::vec3 half_size(rect_size.x / 2.0f, rect_size.y / 2.0f, 0.0f);
     rectangles.vertices = { 
         -half_size.x,  half_size.y, 0.0f,
@@ -89,11 +79,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
          half_size.x, -half_size.y, 0.0f
     };
 
-    for(int i = 0; i < map.size(); i++) {
+    for(int i = 0; i < map.data.length(); i++) {
         if(map[i] == ' ') { continue; }
 
-        float x_index = i % map_w;
-        float y_index = i / map_w;
+        float x_index = i % map.width;
+        float y_index = i / map.width;
 
         float x = minimum_x_value + (rect_size.x / 2.0f) + x_index * rect_size.x; 
         float y = maximum_y_value - (rect_size.y / 2.0f) - y_index * rect_size.y; 
@@ -103,12 +93,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
     setup_buffers(renderer);
     setup_instanced_elements(renderer, rectangles.vertices, rectangles.indices, rectangles.positions, rectangles.indices.size(), rectangles.positions.size());
-
-    const char* shader_path = std::getenv("SHADER_PATH");    
-    if(!shader_path) {
-        std::cerr << "Error: SHADER_PATH not set!" << std::endl; 
-        return -1;
-    }
 
     uint32_t vertex_shader = compile_shader(std::string(shader_path) + "/default.vert", GL_VERTEX_SHADER);
     uint32_t fragment_shader = compile_shader(std::string(shader_path) + "/default.frag", GL_FRAGMENT_SHADER);
