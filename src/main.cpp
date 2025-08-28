@@ -82,6 +82,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     for(int i = 0; i < map.data.length(); i++) {
         if(map[i] == ' ') { continue; }
 
+        std::cout << "HI?" << std::endl;
         float x_index = i % map.width;
         float y_index = i / map.width;
 

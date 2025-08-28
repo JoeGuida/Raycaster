@@ -11,11 +11,6 @@ struct Map {
     std::string data;
 
     Map() : width(0), height(0), data("") {}
-    Map(uint32_t width, uint32_t height, const std::string& data) : width(width), height(height), data(data) {
-        if(width * height != data.length()) {
-            std::cerr << std::format("Error Loading Map :: Width = {}, Height = {}, Data Length = {}", width, height, data.length()) << std::endl; 
-        }
-    }
 
     char operator[](uint32_t i) {
         if(i >= data.length()) {
