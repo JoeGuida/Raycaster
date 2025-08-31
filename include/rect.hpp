@@ -10,6 +10,7 @@
 
 struct Rect {
     std::vector<glm::vec4> positions;
+    std::vector<uint32_t> colors;
     std::array<float, 12> vertices;
     std::array<uint32_t, 6> indices = { 0, 1, 2, 1, 3, 2 };
 };

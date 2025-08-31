@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include <fstream>
-#include <iostream>
 #include <string>
 
 void load_map_from_file(Map& map, const std::string& filepath) {

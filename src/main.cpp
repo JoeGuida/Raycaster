@@ -1,5 +1,5 @@
 #include <Windows.h>
-#include <gl/GL.h>
+#include <gl/GL.h> 
 #include <glcorearb.h>
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
@@ -15,7 +15,9 @@
 #include <algorithm>
 #include <array>
 #include <iostream>
+#include <format>
 #include <string>
+#include <unordered_map>
 
 HWND hwnd;
 HGLRC hglrc;
@@ -33,17 +35,28 @@ constexpr float maximum_y_value = 1.0f;
 constexpr float x_range = 2.0f;
 constexpr float y_range = 2.0f;
 
-int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
-    const char* shader_path = std::getenv("SHADER_PATH");
-    if(!shader_path) {
-        std::cerr << "Error: SHADER_PATH not set!" << std::endl;
-        return -1;
-    }
+std::array colors = {
+    glm::vec3(0.216f, 0.212f, 0.310f),  // #37364e
+    glm::vec3(0.208f, 0.364f, 0.410f),  // #355d69
+    glm::vec3(0.416f, 0.682f, 0.618f),  // #6aae9d
+    glm::vec3(0.725f, 0.835f, 0.710f),  // #b9d4b4
+    glm::vec3(0.957f, 0.914f, 0.835f),  // #f4e9d4
+    glm::vec3(0.816f, 0.729f, 0.663f),  // #d0baa9
+    glm::vec3(0.616f, 0.557f, 0.569f),  // #9e8e91
+    glm::vec3(0.357f, 0.290f, 0.408f)   // #5b4a68
+};
 
-    const char* map_path = std::getenv("MAP_PATH");
-    if(!map_path) {
-        std::cerr << "Error: MAP_PATH not set!" << std::endl;
-        return -1;
+int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
+    std::unordered_map<std::string, std::string> env_vars;
+    std::array vars = { "SHADER_PATH", "MAP_PATH" };
+    for(auto& var : vars) {
+        const char* env_var = std::getenv(var);
+        if(!env_var) {
+            std::cerr << std::format("Error: {} not set!", var) << std::endl;
+            return -1;
+        }
+
+        env_vars[var] = std::string(env_var);
     }
 
     // Initial Window Parameters
@@ -63,7 +76,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     initialize_buffers(renderer);
 
     Map map;
-    load_map_from_file(map, std::string(map_path) + "/map.txt");
+    load_map_from_file(map, env_vars["MAP_PATH"] + "/map.txt");
 
     Rect rectangles;
 
@@ -82,7 +95,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     for(int i = 0; i < map.data.length(); i++) {
         if(map[i] == ' ') { continue; }
 
-        std::cout << "HI?" << std::endl;
         float x_index = i % map.width;
         float y_index = i / map.width;
 
@@ -90,13 +102,15 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         float y = maximum_y_value - (rect_size.y / 2.0f) - y_index * rect_size.y; 
 
         rectangles.positions.push_back(glm::vec4(x, y, 0.0f, 0.0f)); 
+        int n = map[i] - '0';
+        rectangles.colors.push_back(n + 1);
     }
 
     setup_buffers(renderer);
-    setup_instanced_elements(renderer, rectangles.vertices, rectangles.indices, rectangles.positions, rectangles.indices.size(), rectangles.positions.size());
+    setup_instanced_elements(renderer, rectangles.vertices, rectangles.indices, rectangles.positions, rectangles.colors);
 
-    uint32_t vertex_shader = compile_shader(std::string(shader_path) + "/default.vert", GL_VERTEX_SHADER);
-    uint32_t fragment_shader = compile_shader(std::string(shader_path) + "/default.frag", GL_FRAGMENT_SHADER);
+    uint32_t vertex_shader = compile_shader(env_vars["SHADER_PATH"] + "/default.vert", GL_VERTEX_SHADER);
+    uint32_t fragment_shader = compile_shader(env_vars["SHADER_PATH"] + "/default.frag", GL_FRAGMENT_SHADER);
     uint32_t shader_program = link_shaders(vertex_shader, fragment_shader);
     glUseProgram(shader_program);
 
@@ -108,9 +122,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         glm::vec3(0.0f, 0.0f, -1.0f), 
         glm::vec3(0.0f, 1.0f, 0.0f));
     set_shader_uniform(shader_program, "view", view);
+
+    for(int i = 0; i < colors.size(); i++) {
+        set_shader_uniform(shader_program, std::format("colors[{}]", i), colors[i]);
+    }
     
     loop_until_quit(window, renderer);
 
-    std::cin.get();
     return 0;
 }
