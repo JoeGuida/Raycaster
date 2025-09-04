@@ -14,30 +14,36 @@
 void render_update(Renderer& renderer) {
     glClearColor(0.216f, 0.212f, 0.310f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glBindVertexArray(renderer.vao);
-    draw(renderer);
+    glBindVertexArray(renderer.rect_vao);
+    draw_instanced(renderer);
 }
 
 void initialize_buffers(Renderer& renderer) {
-    glGenVertexArrays(1, &renderer.vao);
-    glGenBuffers(1, &renderer.vbo);
-    glGenBuffers(1, &renderer.ebo);
+    glGenVertexArrays(1, &renderer.rect_vao);
+    glGenBuffers(1, &renderer.rect_vbo);
+    glGenBuffers(1, &renderer.rect_ebo);
     glGenBuffers(1, &renderer.ssbo[0]);
     glGenBuffers(1, &renderer.ssbo[1]);
 }
 
 void setup_buffers(Renderer& renderer) {
-    glBindVertexArray(renderer.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, renderer.vbo);
+    glBindVertexArray(renderer.rect_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, renderer.rect_vbo);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 }
 
+void setup_point(Renderer& renderer, const glm::vec3& position, const glm::vec3& color, float size) {
+    glBindVertexArray(renderer.point_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, renderer.point_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3), &position, GL_STATIC_DRAW);
+}
+
 void setup_instanced_elements(Renderer& renderer, std::span<float> vertices, std::span<uint32_t> indices, std::span<glm::vec4> positions, std::span<uint32_t> colors) {
-    glBindVertexArray(renderer.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, renderer.vbo);
+    glBindVertexArray(renderer.rect_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, renderer.rect_vbo);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer.ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer.rect_ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, renderer.ssbo[0]);
     glBufferData(GL_SHADER_STORAGE_BUFFER, positions.size() * sizeof(glm::vec4), positions.data(), GL_STATIC_DRAW);
@@ -50,7 +56,12 @@ void setup_instanced_elements(Renderer& renderer, std::span<float> vertices, std
     renderer.num_elements = positions.size();
 }
 
-void draw(Renderer& renderer) {
+void draw_instanced(Renderer& renderer) {
     glDrawElementsInstanced(GL_TRIANGLES, renderer.num_indices, GL_UNSIGNED_INT, 0, renderer.num_elements); 
 }
+
+void draw(Renderer& renderer) {
+    glDrawArrays(GL_POINTS, 0, 1);
+}
+
 

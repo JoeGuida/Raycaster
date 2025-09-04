@@ -109,24 +109,32 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     setup_buffers(renderer);
     setup_instanced_elements(renderer, rectangles.vertices, rectangles.indices, rectangles.positions, rectangles.colors);
 
-    uint32_t vertex_shader = compile_shader(env_vars["SHADER_PATH"] + "/default.vert", GL_VERTEX_SHADER);
-    uint32_t fragment_shader = compile_shader(env_vars["SHADER_PATH"] + "/default.frag", GL_FRAGMENT_SHADER);
-    uint32_t shader_program = link_shaders(vertex_shader, fragment_shader);
-    glUseProgram(shader_program);
-
     glm::mat4 projection = glm::ortho(-ASPECT_RATIO, ASPECT_RATIO, -1.0, 1.0, 0.001, 100.0);
-    set_shader_uniform(shader_program, "projection", projection);
-    
     glm::mat4 view = glm::lookAt(
         glm::vec3(0.0f, 0.0f, 3.0f), 
         glm::vec3(0.0f, 0.0f, -1.0f), 
         glm::vec3(0.0f, 1.0f, 0.0f));
+
+    uint32_t vertex_shader = compile_shader(env_vars["SHADER_PATH"] + "/default.vert", GL_VERTEX_SHADER);
+    uint32_t point_shader = compile_shader(env_vars["SHADER_PATH"] + "/point.vert", GL_VERTEX_SHADER);
+    uint32_t fragment_shader = compile_shader(env_vars["SHADER_PATH"] + "/default.frag", GL_FRAGMENT_SHADER);
+    uint32_t shader_program = link_shaders(vertex_shader, fragment_shader);
+    uint32_t point_shader_program = link_shaders(point_shader, fragment_shader);
+
+    glUseProgram(shader_program);
+    set_shader_uniform(shader_program, "projection", projection);
     set_shader_uniform(shader_program, "view", view);
 
     for(int i = 0; i < colors.size(); i++) {
         set_shader_uniform(shader_program, std::format("colors[{}]", i), colors[i]);
     }
-    
+
+    glUseProgram(point_shader_program);
+    set_shader_uniform(point_shader_program, "projection", projection);
+    set_shader_uniform(point_shader_program, "view", view);
+    set_shader_uniform(point_shader_program, "color", glm::vec3(1.0f, 0.0f, 0.0f));
+
+    glUseProgram(shader_program);
     loop_until_quit(window, renderer);
 
     return 0;

@@ -80,6 +80,7 @@ bool initialize_window(Window& window, HINSTANCE hInstance, int ShowWnd, int wid
     UpdateWindow(window.hwnd);
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_PROGRAM_POINT_SIZE);
 
     return true;
 }
