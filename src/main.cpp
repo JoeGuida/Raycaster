@@ -47,19 +47,13 @@ std::array colors = {
     glm::vec3(0.357f, 0.290f, 0.408f)   // #5b4a68
 };
 
-void create_rectangles(Rect& rectangles, const Map& map) {
+std::vector<Rect> create_rectangles_from_map(const Map& map) {
+    std::vector<Rect> rects;
+
     size_t non_space_tiles = std::count_if(map.data.begin(), map.data.end(), [](char c){ return c != ' '; });
-    rectangles.positions.reserve(non_space_tiles);
+    rects.reserve(non_space_tiles);
 
     const glm::vec3 rect_size(x_range / map.width, y_range / map.height, 0.0f);
-    const glm::vec3 half_size(rect_size.x / 2.0f, rect_size.y / 2.0f, 0.0f);
-    rectangles.vertices = {
-        -half_size.x,  half_size.y, 0.0f,
-         half_size.x,  half_size.y, 0.0f,
-        -half_size.x, -half_size.y, 0.0f,
-         half_size.x, -half_size.y, 0.0f
-    };
-
     for(int i = 0; i < map.data.length(); i++) {
         if(map[i] == ' ') { continue; }
 
@@ -69,10 +63,10 @@ void create_rectangles(Rect& rectangles, const Map& map) {
         float x = minimum_x_value + (rect_size.x / 2.0f) + x_index * rect_size.x;
         float y = maximum_y_value - (rect_size.y / 2.0f) - y_index * rect_size.y;
 
-        rectangles.positions.push_back(glm::vec4(x, y, 0.0f, 0.0f));
-        int n = map[i] - '0';
-        rectangles.colors.push_back(n + 1);
+        rects.emplace_back(Rect(glm::vec4(x, y, 0.0f, 0.0f), map[i] - '0'));
     }
+
+    return rects;
 }
 
 std::unordered_map<std::string, std::string> load_environment_variables(const std::vector<const char*>& variable_names) {
@@ -111,11 +105,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     Map map;
     load_map_from_file(map, env_vars["MAP_PATH"] + "/map.txt");
 
-    Rect rectangles;
-    create_rectangles(rectangles, map);
+    std::vector<Rect> rects = create_rectangles_from_map(map);
+    setup_rects(renderer, rects);
 
     setup_buffers(renderer);
-    setup_instanced_elements(renderer, rectangles.vertices, rectangles.indices, rectangles.positions, rectangles.colors);
 
     glm::mat4 projection = glm::ortho(-ASPECT_RATIO, ASPECT_RATIO, -1.0, 1.0, 0.001, 100.0);
     glm::mat4 view = glm::lookAt(
