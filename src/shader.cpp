@@ -6,13 +6,12 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <fstream>
-#include <format>
-#include <iostream>
+#include <print>
 
 uint32_t compile_shader(const std::string& filepath, GLenum type) {
     std::ifstream shader_file(filepath);
     if(!shader_file) {
-        std::cerr << std::format("ERROR READING FILE :: {}", filepath) << std::endl;
+        std::println("ERROR READING FILE :: {}", filepath);
     }
 
     shader_file.seekg(0, std::ios::end);
@@ -34,7 +33,7 @@ uint32_t compile_shader(const std::string& filepath, GLenum type) {
 		std::string log(logLength, ' ');
 		glGetShaderInfoLog(id, logLength, nullptr, &log[0]);
 
-		std::cerr << std::format("Shader Compilation Failed! :: {} {}", type, log) << std::endl;
+		std::println("Shader Compilation Failed! :: {} {}", type, log);
 		glDeleteShader(id);
 		return 0;
 	}
@@ -56,7 +55,7 @@ uint32_t link_shaders(uint32_t vertex_shader, uint32_t fragment_shader) {
 		std::string log(logLength, ' ');
 		glGetProgramInfoLog(program, logLength, nullptr, &log[0]);
 
-		std::cerr << "Shader program linking Failed!" << std::endl;
+		std::println("Shader program linking Failed!");
 		glDeleteProgram(program);
 		return 0;
 	}

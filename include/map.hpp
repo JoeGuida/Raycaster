@@ -1,8 +1,7 @@
 #ifndef RAYCASTER_MAP_HPP
 #define RAYCASTER_MAP_HPP
 
-#include <format>
-#include <iostream>
+#include <print>
 #include <string>
 
 struct Map {
@@ -14,7 +13,15 @@ struct Map {
 
     char operator[](uint32_t i) {
         if(i >= data.length()) {
-            std::cerr << std::format("Error accessing map data at index {}, Map Size: {}", i, data.length()) << std::endl;
+            std::println("Error accessing map data at index {}, Map Size: {}", i, data.length());
+        }
+
+        return data[i];
+    }
+
+    char operator[](uint32_t i) const {
+        if(i >= data.length()) {
+            std::println("Error accessing map data at index {}, Map Size: {}", i, data.length());
         }
 
         return data[i];
