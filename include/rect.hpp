@@ -3,13 +3,15 @@
 
 #include <glm/vec4.hpp>
 
+#include "material.hpp"
+
 #include <cstdint>
 
 struct Rect {
     glm::vec4 position;
-    uint32_t color;
+    Material material;
 
-    Rect(const glm::vec4& position, const uint32_t& color) : position(position), color(color) {}
+    Rect(const glm::vec4& position, const Material& material) : position(position), material(material) {}
 };
 
 #endif

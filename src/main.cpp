@@ -2,11 +2,11 @@
 #include <gl/GL.h> 
 #include <glcorearb.h>
 #include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "gl_loader.hpp"
-//#include "handle.hpp"
 #include "map.hpp"
 #include "rect.hpp"
 #include "renderer.hpp"
@@ -15,19 +15,9 @@
 
 #include <algorithm>
 #include <array>
-#include <format>
 #include <print>
 #include <string>
 #include <unordered_map>
-
-HWND hwnd;
-HGLRC hglrc;
-
-uint32_t vao;
-uint32_t vbo;
-uint32_t ebo;
-
-bool is_running = true;
 
 constexpr float minimum_x_value = -1.0f;
 constexpr float maximum_x_value = 1.0f;
@@ -37,14 +27,14 @@ constexpr float x_range = 2.0f;
 constexpr float y_range = 2.0f;
 
 std::array colors = {
-    glm::vec3(0.216f, 0.212f, 0.310f),  // #37364e
-    glm::vec3(0.208f, 0.364f, 0.410f),  // #355d69
-    glm::vec3(0.416f, 0.682f, 0.618f),  // #6aae9d
-    glm::vec3(0.725f, 0.835f, 0.710f),  // #b9d4b4
-    glm::vec3(0.957f, 0.914f, 0.835f),  // #f4e9d4
-    glm::vec3(0.816f, 0.729f, 0.663f),  // #d0baa9
-    glm::vec3(0.616f, 0.557f, 0.569f),  // #9e8e91
-    glm::vec3(0.357f, 0.290f, 0.408f)   // #5b4a68
+    glm::vec4(0.216f, 0.212f, 0.310f, 0.0f), // #37364e
+    glm::vec4(0.208f, 0.364f, 0.410f, 0.0f), // #355d69
+    glm::vec4(0.416f, 0.682f, 0.618f, 0.0f), // #6aae9d
+    glm::vec4(0.725f, 0.835f, 0.710f, 0.0f), // #b9d4b4
+    glm::vec4(0.957f, 0.914f, 0.835f, 0.0f), // #f4e9d4
+    glm::vec4(0.816f, 0.729f, 0.663f, 0.0f), // #d0baa9
+    glm::vec4(0.616f, 0.557f, 0.569f, 0.0f), // #9e8e91
+    glm::vec4(0.357f, 0.290f, 0.408f, 0.0f)  // #5b4a68
 };
 
 std::vector<Rect> create_rectangles_from_map(const Map& map) {
@@ -63,7 +53,7 @@ std::vector<Rect> create_rectangles_from_map(const Map& map) {
         float x = minimum_x_value + (rect_size.x / 2.0f) + x_index * rect_size.x;
         float y = maximum_y_value - (rect_size.y / 2.0f) - y_index * rect_size.y;
 
-        rects.emplace_back(Rect(glm::vec4(x, y, 0.0f, 0.0f), map[i] - '0'));
+        rects.emplace_back(Rect(glm::vec4(x, y, 0.0f, 0.0f), Material(colors[map[i] - '0'])));
     }
 
     return rects;
@@ -101,6 +91,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
 
     Renderer renderer;
     initialize_buffers(renderer);
+    setup_buffers(renderer);
 
     Map map;
     load_map_from_file(map, env_vars["MAP_PATH"] + "/map.txt");
@@ -108,7 +99,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     std::vector<Rect> rects = create_rectangles_from_map(map);
     setup_rects(renderer, rects);
 
-    setup_buffers(renderer);
+    std::vector<Point> points = { Point(glm::vec3(0.0f), 100.0f, Material(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f))) };
+    setup_points(renderer, points);
 
     glm::mat4 projection = glm::ortho(-ASPECT_RATIO, ASPECT_RATIO, -1.0, 1.0, 0.001, 100.0);
     glm::mat4 view = glm::lookAt(
@@ -126,15 +118,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     set_shader_uniform(shader_program, "projection", projection);
     set_shader_uniform(shader_program, "view", view);
 
-    for(int i = 0; i < colors.size(); i++) {
-        std::string index = std::format("colors[{}]", i);
-        set_shader_uniform(shader_program, index, colors[i]);
-    }
-
     glUseProgram(point_shader_program);
     set_shader_uniform(point_shader_program, "projection", projection);
     set_shader_uniform(point_shader_program, "view", view);
-    set_shader_uniform(point_shader_program, "color", glm::vec3(1.0f, 0.0f, 0.0f));
+    set_shader_uniform(point_shader_program, "color", points[0].material.color);
+    set_shader_uniform(point_shader_program, "size", points[0].size);
 
     glUseProgram(shader_program);
     loop_until_quit(window, renderer);

@@ -3,12 +3,14 @@
 
 #include <glm/vec3.hpp>
 
+#include "material.hpp"
+
 struct Point {
     glm::vec3 position;
-    glm::vec3 color;
     float size;
+    Material material;
 
-    Point(const glm::vec3& position, const glm::vec3& color, float size) : position(position), color(color), size(size) {}
+    Point(const glm::vec3& position, float size, const Material& material) : position(position), size(size), material(material) {}
 };
 
 #endif

@@ -22,6 +22,7 @@ struct Renderer {
 
     uint32_t point_vao;
     uint32_t point_vbo;
+    uint32_t point_ebo;
 
     uint32_t ssbo[2];
 
@@ -39,5 +40,6 @@ void initialize_buffers(Renderer& renderer);
 void render_update(Renderer& renderer);
 void setup_buffers(Renderer& renderer);
 void setup_rects(Renderer& renderer, const std::vector<Rect>& rects);
+void setup_points(Renderer& renderer, const std::vector<Point>& points);
 
 #endif
