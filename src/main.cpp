@@ -89,9 +89,18 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         return 0;
     }
 
+    // Compile Shaders
+    uint32_t vertex_shader = compile_shader(env_vars["SHADER_PATH"] + "/default.vert", GL_VERTEX_SHADER);
+    uint32_t point_shader = compile_shader(env_vars["SHADER_PATH"] + "/point.vert", GL_VERTEX_SHADER);
+    uint32_t fragment_shader = compile_shader(env_vars["SHADER_PATH"] + "/default.frag", GL_FRAGMENT_SHADER);
+    uint32_t rect_shader_program = link_shaders(vertex_shader, fragment_shader);
+    uint32_t point_shader_program = link_shaders(point_shader, fragment_shader);
+
     Renderer renderer;
     initialize_buffers(renderer);
     setup_buffers(renderer);
+    renderer.shaders["rect"] = rect_shader_program;
+    renderer.shaders["point"] = point_shader_program;
 
     Map map;
     load_map_from_file(map, env_vars["MAP_PATH"] + "/map.txt");
@@ -108,15 +117,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         glm::vec3(0.0f, 0.0f, -1.0f),
         glm::vec3(0.0f, 1.0f, 0.0f));
 
-    uint32_t vertex_shader = compile_shader(env_vars["SHADER_PATH"] + "/default.vert", GL_VERTEX_SHADER);
-    uint32_t point_shader = compile_shader(env_vars["SHADER_PATH"] + "/point.vert", GL_VERTEX_SHADER);
-    uint32_t fragment_shader = compile_shader(env_vars["SHADER_PATH"] + "/default.frag", GL_FRAGMENT_SHADER);
-    uint32_t shader_program = link_shaders(vertex_shader, fragment_shader);
-    uint32_t point_shader_program = link_shaders(point_shader, fragment_shader);
 
-    glUseProgram(shader_program);
-    set_shader_uniform(shader_program, "projection", projection);
-    set_shader_uniform(shader_program, "view", view);
+    glUseProgram(rect_shader_program);
+    set_shader_uniform(rect_shader_program, "projection", projection);
+    set_shader_uniform(rect_shader_program, "view", view);
 
     glUseProgram(point_shader_program);
     set_shader_uniform(point_shader_program, "projection", projection);
@@ -124,7 +128,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     set_shader_uniform(point_shader_program, "color", points[0].material.color);
     set_shader_uniform(point_shader_program, "size", points[0].size);
 
-    glUseProgram(shader_program);
+    glUseProgram(rect_shader_program);
     loop_until_quit(window, renderer);
 
     return 0;
