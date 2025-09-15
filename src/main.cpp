@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <array>
+#include <expected>
 #include <print>
 #include <string>
 #include <unordered_map>
@@ -90,17 +91,50 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
     }
 
     // Compile Shaders
-    uint32_t vertex_shader = compile_shader(env_vars["SHADER_PATH"] + "/default.vert", GL_VERTEX_SHADER);
-    uint32_t point_shader = compile_shader(env_vars["SHADER_PATH"] + "/point.vert", GL_VERTEX_SHADER);
-    uint32_t fragment_shader = compile_shader(env_vars["SHADER_PATH"] + "/default.frag", GL_FRAGMENT_SHADER);
-    uint32_t rect_shader_program = link_shaders(vertex_shader, fragment_shader);
-    uint32_t point_shader_program = link_shaders(point_shader, fragment_shader);
+
+    auto rect_vertex_shader = compile_shader(env_vars["SHADER_PATH"], "default", GL_VERTEX_SHADER);
+    auto rect_fragment_shader = compile_shader(env_vars["SHADER_PATH"], "default", GL_FRAGMENT_SHADER);
+    auto point_vertex_shader = compile_shader(env_vars["SHADER_PATH"], "point", GL_VERTEX_SHADER);
+    auto point_fragment_shader = compile_shader(env_vars["SHADER_PATH"], "point", GL_FRAGMENT_SHADER);
+
+    if(!rect_vertex_shader.has_value()) {
+        std::println("{}", rect_vertex_shader.error());
+        return -1;
+    }
+
+    if(!rect_fragment_shader.has_value()) {
+        std::println("{}", rect_fragment_shader.error());
+        return -1;
+    }
+
+    if(!point_vertex_shader.has_value()) {
+        std::println("{}", point_vertex_shader.error());
+        return -1;
+    }
+
+    if(!point_fragment_shader.has_value()) {
+        std::println("{}", point_fragment_shader.error());
+        return -1;
+    }
+
+    auto rect_shader_program = link_shaders(rect_vertex_shader.value(), rect_fragment_shader.value());
+    auto point_shader_program = link_shaders(point_vertex_shader.value(), point_fragment_shader.value());
+
+    if(!rect_shader_program.has_value()) {
+        std::println("{}", rect_shader_program.error());
+        return -1;
+    }
+
+    if(!point_shader_program.has_value()) {
+        std::println("{}", point_shader_program.error());
+        return -1;
+    }
 
     Renderer renderer;
     initialize_buffers(renderer);
     setup_buffers(renderer);
-    renderer.shaders["rect"] = rect_shader_program;
-    renderer.shaders["point"] = point_shader_program;
+    renderer.shaders["rect"] = rect_shader_program.value();
+    renderer.shaders["point"] = point_shader_program.value();
 
     Map map;
     load_map_from_file(map, env_vars["MAP_PATH"] + "/map.txt");
@@ -118,17 +152,17 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int n
         glm::vec3(0.0f, 1.0f, 0.0f));
 
 
-    glUseProgram(rect_shader_program);
-    set_shader_uniform(rect_shader_program, "projection", projection);
-    set_shader_uniform(rect_shader_program, "view", view);
+    glUseProgram(rect_shader_program.value());
+    set_shader_uniform(rect_shader_program.value(), "projection", projection);
+    set_shader_uniform(rect_shader_program.value(), "view", view);
 
-    glUseProgram(point_shader_program);
-    set_shader_uniform(point_shader_program, "projection", projection);
-    set_shader_uniform(point_shader_program, "view", view);
-    set_shader_uniform(point_shader_program, "color", points[0].material.color);
-    set_shader_uniform(point_shader_program, "size", points[0].size);
+    glUseProgram(point_shader_program.value());
+    set_shader_uniform(point_shader_program.value(), "projection", projection);
+    set_shader_uniform(point_shader_program.value(), "view", view);
+    set_shader_uniform(point_shader_program.value(), "color", points[0].material.color);
+    set_shader_uniform(point_shader_program.value(), "size", points[0].size);
 
-    glUseProgram(rect_shader_program);
+    glUseProgram(rect_shader_program.value());
     loop_until_quit(window, renderer);
 
     return 0;

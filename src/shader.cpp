@@ -5,13 +5,30 @@
 #include <gl/GL.h>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <expected>
+#include <filesystem>
 #include <fstream>
+#include <format>
 #include <print>
 
-uint32_t compile_shader(const std::string& filepath, GLenum type) {
-    std::ifstream shader_file(filepath);
+std::expected<uint32_t, std::string> compile_shader(const std::string& source_folder, const std::string& name, GLenum type) {
+    std::filesystem::path filepath(source_folder);
+    if(type == GL_VERTEX_SHADER) {
+        std::string shader_name = name + ".vert";
+        filepath = filepath / shader_name;
+    }
+    else if(type == GL_FRAGMENT_SHADER) {
+        std::string shader_name = name + ".frag";
+        filepath = filepath / shader_name;
+    }
+    else {
+        return std::unexpected(std::format("ERROR :: {} is not a valid type for shader compilation", type)); 
+    }
+
+    std::ifstream shader_file(filepath.string());
+
     if(!shader_file) {
-        std::println("ERROR READING FILE :: {}", filepath);
+        return std::unexpected(std::format("ERROR READING FILE :: {}", filepath.string()));
     }
 
     shader_file.seekg(0, std::ios::end);
@@ -33,15 +50,14 @@ uint32_t compile_shader(const std::string& filepath, GLenum type) {
 		std::string log(logLength, ' ');
 		glGetShaderInfoLog(id, logLength, nullptr, &log[0]);
 
-		std::println("Shader Compilation Failed! :: {} {}", type, log);
 		glDeleteShader(id);
-		return 0;
+		return std::unexpected(std::format("Shader Compilation Failed! :: {} {}", type, log));
 	}
 
 	return id; 
 }
 
-uint32_t link_shaders(uint32_t vertex_shader, uint32_t fragment_shader) {
+std::expected<uint32_t, std::string> link_shaders(uint32_t vertex_shader, uint32_t fragment_shader) {
     uint32_t program = glCreateProgram();
     glAttachShader(program, vertex_shader);
 	glAttachShader(program, fragment_shader);
@@ -55,9 +71,8 @@ uint32_t link_shaders(uint32_t vertex_shader, uint32_t fragment_shader) {
 		std::string log(logLength, ' ');
 		glGetProgramInfoLog(program, logLength, nullptr, &log[0]);
 
-		std::println("Shader program linking Failed!");
 		glDeleteProgram(program);
-		return 0;
+		return std::unexpected("Shader program linking Failed!");
 	}
 
 	glDetachShader(program, vertex_shader);
