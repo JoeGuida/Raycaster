@@ -5,7 +5,7 @@
 #include <string>
 
 void load_map_from_file(Map& map, const std::string& filepath) {
-    std::ifstream file(filepath);
+    std::fstream file(filepath);
     std::string line;
 
     uint32_t width;

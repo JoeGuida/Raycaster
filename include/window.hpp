@@ -1,19 +1,21 @@
 #ifndef RAYCASTER_WINDOW_HPP
 #define RAYCASTER_WINDOW_HPP
 
-#include "renderer.hpp"
-
-#include <cstdint>
 #include <Windows.h>
 
+#include "renderer.hpp"
+
 struct Window {
-    HGLRC hglrc;
-    HDC hdc;
     HWND hwnd;
+    HDC hdc;
+    HGLRC hglrc;
+    int width;
+    int height;
 };
 
-LRESULT CALLBACK window_proc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-bool initialize_window(Window& window, HINSTANCE hInstance, int ShowWnd, int width, int height, const wchar_t* windowName, const wchar_t* windowTitle); 
-void loop_until_quit(Window& window, Renderer& renderer); 
+bool initialize_window(Window& window, Renderer& renderer, HINSTANCE instance, int show_window_flags, int width, int height, 
+                       const wchar_t* class_name, const wchar_t* window_title);
+void run_message_loop(Window& window);
 
 #endif
+

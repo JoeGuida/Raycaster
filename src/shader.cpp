@@ -1,9 +1,4 @@
 #include "shader.hpp"
-#include "gl_loader.hpp"
-
-#include <Windows.h>
-#include <gl/GL.h>
-#include <glm/gtc/type_ptr.hpp>
 
 #include <expected>
 #include <filesystem>
@@ -11,22 +6,33 @@
 #include <format>
 #include <print>
 
-std::expected<uint32_t, std::string> compile_shader(const std::string& source_folder, const std::string& name, GLenum type) {
+#include <Windows.h>
+
+#include <glm/gtc/type_ptr.hpp>
+
+#include "gl_loader.hpp"
+
+std::expected<uint32_t, std::string> compile_shader(const std::string& source_folder, const std::string& name, uint32_t type) {
     std::filesystem::path filepath(source_folder);
-    if(type == GL_VERTEX_SHADER) {
-        std::string shader_name = name + ".vert";
-        filepath = filepath / shader_name;
+    std::string extension;
+    switch(type) {
+        case GL_VERTEX_SHADER: {
+            extension = ".vert";
+            break;
+        }
+        case GL_FRAGMENT_SHADER: {
+            extension = ".frag";
+            break;
+        }
+        default: {
+            return std::unexpected(std::format("ERROR :: {} is not a valid type for shader compilation", type)); 
+        }
     }
-    else if(type == GL_FRAGMENT_SHADER) {
-        std::string shader_name = name + ".frag";
-        filepath = filepath / shader_name;
-    }
-    else {
-        return std::unexpected(std::format("ERROR :: {} is not a valid type for shader compilation", type)); 
-    }
+
+    std::string shader_name = name + extension;
+    filepath = filepath / shader_name;
 
     std::ifstream shader_file(filepath.string());
-
     if(!shader_file) {
         return std::unexpected(std::format("ERROR READING FILE :: {}", filepath.string()));
     }
@@ -42,13 +48,13 @@ std::expected<uint32_t, std::string> compile_shader(const std::string& source_fo
 	glShaderSource(id, 1, &s, nullptr);
 	glCompileShader(id);
 
-	GLint success;
+	int success;
 	glGetShaderiv(id, GL_COMPILE_STATUS, &success);
 	if (!success) {
-		GLint logLength = 0;
-		glGetShaderiv(id, GL_INFO_LOG_LENGTH, &logLength);
-		std::string log(logLength, ' ');
-		glGetShaderInfoLog(id, logLength, nullptr, &log[0]);
+		int log_length = 0;
+		glGetShaderiv(id, GL_INFO_LOG_LENGTH, &log_length);
+		std::string log(log_length, ' ');
+		glGetShaderInfoLog(id, log_length, nullptr, &log[0]);
 
 		glDeleteShader(id);
 		return std::unexpected(std::format("Shader Compilation Failed! :: {} {}", type, log));
@@ -63,13 +69,13 @@ std::expected<uint32_t, std::string> link_shaders(uint32_t vertex_shader, uint32
 	glAttachShader(program, fragment_shader);
 	glLinkProgram(program);
 
-	GLint success;
+	int success;
 	glGetProgramiv(program, GL_LINK_STATUS, &success);
 	if (!success) {
-		GLint logLength = 0;
-		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logLength);
-		std::string log(logLength, ' ');
-		glGetProgramInfoLog(program, logLength, nullptr, &log[0]);
+		int log_length = 0;
+		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &log_length);
+		std::string log(log_length, ' ');
+		glGetProgramInfoLog(program, log_length, nullptr, &log[0]);
 
 		glDeleteProgram(program);
 		return std::unexpected("Shader program linking Failed!");
@@ -90,3 +96,4 @@ void set_shader_uniform(uint32_t program, const std::string& uniform, const glm:
 void set_shader_uniform(uint32_t program, const std::string& uniform, const glm::vec3& value) {
     glUniform3fv(glGetUniformLocation(program, uniform.c_str()), 1, glm::value_ptr(value));
 }
+
