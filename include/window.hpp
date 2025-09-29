@@ -5,6 +5,7 @@
 
 struct Window {
     HWND hwnd;
+    HDC hdc;
     HGLRC hglrc;
     int width;
     int height;

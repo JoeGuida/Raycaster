@@ -57,23 +57,26 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
         return -1;
     }
 
+    initialize_buffers(renderer);
     renderer.vertices = { 
-        glm::vec2(-1.0f,  1.0f), 
-        glm::vec2( 1.0f,  1.0f),
-        glm::vec2(-1.0f, -1.0f),
-        glm::vec2( 1.0f, -1.0f)
+        glm::vec2(-0.1f,  0.1f), 
+        glm::vec2( 0.1f,  0.1f),
+        glm::vec2(-0.1f, -0.1f),
+        glm::vec2( 0.1f, -0.1f)
     };
 
     renderer.indices = { 0, 1, 2, 1, 3, 2 };
-    renderer.positions[0] = glm::vec4(0.5f, 0.0f, 0.0f, 0.0f);
+    renderer.positions[0] = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+    renderer.count = 1;
     setup(renderer);
 
-    glEnable(GL_DEPTH_TEST);
+    //glEnable(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
 
     glUseProgram(shaders.value()["default"]);
 
     float aspect = width / static_cast<float>(height);
-    glm::mat4 projection = glm::ortho(-1.0f, 1.0f, -aspect, aspect, -1.0f, 10.0f);
+    glm::mat4 projection = glm::ortho(-aspect, aspect, -1.0f, 1.0f, -1.0f, 10.0f);
     glm::mat4 view = glm::lookAt(
         glm::vec3(0.0f, 0.0f, 1.0f), 
         glm::vec3(0.0f, 0.0f, -1.0f), 
@@ -83,7 +86,7 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
     set_shader_uniform(shaders.value()["default"], "view", view);
 
     spdlog::info("starting message loop");
-    run_message_loop(window);
+    run_message_loop(window, renderer);
 
     return 0;
 }

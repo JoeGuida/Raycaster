@@ -39,7 +39,7 @@ bool initialize_window(Window& window, Renderer& renderer, HINSTANCE instance, i
         return false;
     }
 
-    HDC hdc = GetDC(window.hwnd);
+    window.hdc = GetDC(window.hwnd);
     PIXELFORMATDESCRIPTOR pfd = {
         .nSize = sizeof(PIXELFORMATDESCRIPTOR),
         .nVersion = 1,
@@ -51,10 +51,10 @@ bool initialize_window(Window& window, Renderer& renderer, HINSTANCE instance, i
         .iLayerType = PFD_MAIN_PLANE
     };
 
-    int pixel_format = ChoosePixelFormat(hdc, &pfd);
-    SetPixelFormat(hdc, pixel_format, &pfd);
-    HGLRC temp_context = wglCreateContext(hdc);
-    wglMakeCurrent(hdc, temp_context);
+    int pixel_format = ChoosePixelFormat(window.hdc, &pfd);
+    SetPixelFormat(window.hdc, pixel_format, &pfd);
+    HGLRC temp_context = wglCreateContext(window.hdc);
+    wglMakeCurrent(window.hdc, temp_context);
 
     load_gl_functions();
 
@@ -65,11 +65,11 @@ bool initialize_window(Window& window, Renderer& renderer, HINSTANCE instance, i
         0
     };
 
-    window.hglrc = wglCreateContextAttribsARB(hdc, 0, attribs);
+    window.hglrc = wglCreateContextAttribsARB(window.hdc, 0, attribs);
     if(window.hglrc) {
         wglMakeCurrent(nullptr, nullptr);
         wglDeleteContext(temp_context);
-        wglMakeCurrent(hdc, window.hglrc); 
+        wglMakeCurrent(window.hdc, window.hglrc); 
     }
 
     ShowWindow(window.hwnd, show_window_flags);
@@ -81,33 +81,28 @@ bool initialize_window(Window& window, Renderer& renderer, HINSTANCE instance, i
 LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
     switch (message) {
         case WM_CREATE: {
+            spdlog::info("WM_CREATE");
             LPCREATESTRUCT p_create_struct = reinterpret_cast<LPCREATESTRUCT>(lparam);
             SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(p_create_struct->lpCreateParams));
             return 0;
         }
         case WM_KEYDOWN: {
+            spdlog::info("WM_KEYDOWN");
             if (wparam == VK_ESCAPE) {
                 DestroyWindow(hwnd);
             }
             return 0; 
         }
         case WM_DESTROY: {
+            spdlog::info("WM_DESTROY");
             PostQuitMessage(0);
             return 0;
         }
         case WM_PAINT: {
+            spdlog::info("WM_PAINT");
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps);
-            Renderer* renderer = reinterpret_cast<Renderer*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
-            glViewport(0, 0, 1280, 720);
-            glClearColor(0.498f, 0.498f, 0.498f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            glBindVertexArray(renderer->vao);
-            if(renderer) { draw(*renderer); }
-
-            SwapBuffers(hdc);
             EndPaint(hwnd, &ps);
 
             return 0;
@@ -117,7 +112,7 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpar
     return DefWindowProc(hwnd, message, wparam, lparam);
 }
 
-void run_message_loop(Window& window) {
+void run_message_loop(Window& window, Renderer& renderer) {
     MSG message;
     ZeroMemory(&message, sizeof(MSG));
     while (true) {
@@ -128,6 +123,16 @@ void run_message_loop(Window& window) {
 
             TranslateMessage(&message);
             DispatchMessage(&message);
+        }
+        else {
+            glViewport(0, 0, 1280, 720);
+            glClearColor(0.498f, 0.498f, 0.498f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            glBindVertexArray(renderer.vao);
+            draw(renderer); 
+
+            SwapBuffers(window.hdc);
         }
     }
 }
@@ -140,7 +145,7 @@ void initialize_buffers(Renderer& renderer) {
 }
 
 void draw(Renderer& renderer) {
-    glDrawElementsInstanced(GL_TRIANGLES, renderer.indices.size(), GL_UNSIGNED_INT, nullptr, renderer.positions.size());
+    glDrawElementsInstanced(GL_TRIANGLES, renderer.indices.size(), GL_UNSIGNED_INT, nullptr, renderer.count);
 }
 
 void setup(Renderer& renderer) {
@@ -148,7 +153,7 @@ void setup(Renderer& renderer) {
     glBindBuffer(GL_ARRAY_BUFFER, renderer.vbo);
     glBufferData(GL_ARRAY_BUFFER, renderer.vertices.size() * sizeof(glm::vec2), renderer.vertices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer.ebo);
-    glBufferData(GL_ARRAY_BUFFER, renderer.indices.size() * sizeof(uint32_t), renderer.indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, renderer.indices.size() * sizeof(uint32_t), renderer.indices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, renderer.ubo);
     glBufferData(GL_UNIFORM_BUFFER, renderer.positions.size() * sizeof(glm::vec4), renderer.positions.data(), GL_STATIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, renderer.ubo);
