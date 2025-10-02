@@ -98,15 +98,6 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpar
             PostQuitMessage(0);
             return 0;
         }
-        case WM_PAINT: {
-            spdlog::info("WM_PAINT");
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hwnd, &ps);
-
-            EndPaint(hwnd, &ps);
-
-            return 0;
-        }
     }
 
     return DefWindowProc(hwnd, message, wparam, lparam);

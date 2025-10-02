@@ -15,6 +15,7 @@
 
 #include "environment.hpp"
 #include "gl_loader.hpp"
+#include "map.hpp"
 #include "renderer.hpp"
 #include "shader.hpp"
 #include "window.hpp"
@@ -50,6 +51,9 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
         return -1;
     }
 
+    Map map;
+    load_map_from_file(map, env_vars.value()["MAP_PATH"] + "/map.txt");
+
     spdlog::info("compiling shaders");
     auto shaders = compile_shaders({"default"}, env_vars.value()["SHADER_PATH"]);
     if(!shaders.has_value()) {
@@ -57,12 +61,13 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
         return -1;
     }
 
+    float size = 2.0f / 16;
     initialize_buffers(renderer);
     renderer.vertices = { 
-        glm::vec2(-0.1f,  0.1f), 
-        glm::vec2( 0.1f,  0.1f),
-        glm::vec2(-0.1f, -0.1f),
-        glm::vec2( 0.1f, -0.1f)
+        glm::vec2(-size,  size),
+        glm::vec2( size,  size),
+        glm::vec2(-size, -size),
+        glm::vec2( size, -size)
     };
 
     renderer.indices = { 0, 1, 2, 1, 3, 2 };
@@ -78,8 +83,8 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
     float aspect = width / static_cast<float>(height);
     glm::mat4 projection = glm::ortho(-aspect, aspect, -1.0f, 1.0f, -1.0f, 10.0f);
     glm::mat4 view = glm::lookAt(
-        glm::vec3(0.0f, 0.0f, 1.0f), 
-        glm::vec3(0.0f, 0.0f, -1.0f), 
+        glm::vec3(0.0f, 0.0f, 1.0f),
+        glm::vec3(0.0f, 0.0f, -1.0f),
         glm::vec3(0.0f, 1.0f, 0.0f));
 
     set_shader_uniform(shaders.value()["default"], "projection", projection);
