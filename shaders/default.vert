@@ -1,13 +1,10 @@
 #version 430 core
 
-layout (location = 0) in vec3 pos;
+layout (location = 0) in vec2 pos;
 
-layout(std430, binding = 0) buffer instance_buffer {
-    vec4 positions[];
-};
-
-layout(std430, binding = 1) buffer color_buffer {
-    vec4 colors[];
+layout (std140, binding = 0) uniform instance_data {
+    vec4 positions[256];
+    vec4 colors[256];
 };
 
 uniform mat4 view;
@@ -16,7 +13,8 @@ uniform mat4 projection;
 out vec3 vertex_color;
 
 void main() {
-    vec3 instance_pos = positions[gl_InstanceID].xyz;
-    gl_Position = projection * view * vec4(pos + instance_pos, 1.0);
-    vertex_color = colors[gl_InstanceID].xyz; 
+    vec2 instance_pos = positions[gl_InstanceID].xy;
+    gl_Position = projection * view * vec4(pos + instance_pos, 0.0, 1.0);
+    vertex_color = colors[gl_InstanceID].xyz;
 }
+

@@ -13,6 +13,11 @@
 #define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
 
 extern PFNGLATTACHSHADERPROC             glAttachShader;
+extern PFNGLBINDBUFFERPROC               glBindBuffer;
+extern PFNGLBINDBUFFERBASEPROC           glBindBufferBase;
+extern PFNGLBUFFERDATAPROC               glBufferData;
+extern PFNGLBUFFERSUBDATAPROC            glBufferSubData;
+extern PFNGLBINDVERTEXARRAYPROC          glBindVertexArray;
 extern PFNGLCOMPILESHADERPROC            glCompileShader;
 extern PFNGLCREATEPROGRAMPROC            glCreateProgram;
 extern PFNGLCREATESHADERPROC             glCreateShader;
@@ -20,6 +25,7 @@ extern PFNGLDELETEPROGRAMPROC            glDeleteProgram;
 extern PFNGLDELETESHADERPROC             glDeleteShader;
 extern PFNGLDETACHSHADERPROC             glDetachShader;
 extern PFNGLDRAWELEMENTSINSTANCEDPROC    glDrawElementsInstanced;
+extern PFNGLENABLEVERTEXATTRIBARRAYPROC  glEnableVertexAttribArray;
 extern PFNGLGENBUFFERSPROC               glGenBuffers;
 extern PFNGLGENVERTEXARRAYSPROC          glGenVertexArrays;
 extern PFNGLGETPROGRAMIVPROC             glGetProgramiv;
@@ -31,6 +37,8 @@ extern PFNGLLINKPROGRAMPROC              glLinkProgram;
 extern PFNGLSHADERSOURCEPROC             glShaderSource;
 extern PFNGLUNIFORM3FVPROC               glUniform3fv;
 extern PFNGLUNIFORMMATRIX4FVPROC         glUniformMatrix4fv;
+extern PFNGLUSEPROGRAMPROC               glUseProgram;
+extern PFNGLVERTEXATTRIBPOINTERPROC      glVertexAttribPointer;
 extern PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB;
 
 void load_gl_functions();

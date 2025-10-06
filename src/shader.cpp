@@ -1,14 +1,18 @@
 #include "shader.hpp"
 
+#include <array>
 #include <expected>
 #include <filesystem>
 #include <fstream>
 #include <format>
 #include <print>
+#include <string>
+#include <unordered_map>
 
 #include <Windows.h>
 
 #include <glm/gtc/type_ptr.hpp>
+#include <spdlog/spdlog.h>
 
 #include "gl_loader.hpp"
 
@@ -74,11 +78,14 @@ std::expected<uint32_t, std::string> link_shaders(uint32_t vertex_shader, uint32
 	if (!success) {
 		int log_length = 0;
 		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &log_length);
-		std::string log(log_length, ' ');
-		glGetProgramInfoLog(program, log_length, nullptr, &log[0]);
+
+		std::string log(log_length, '\0');
+		glGetProgramInfoLog(program, log_length, nullptr, log.data());
 
 		glDeleteProgram(program);
-		return std::unexpected("Shader program linking Failed!");
+	    glDeleteShader(vertex_shader);
+	    glDeleteShader(fragment_shader);
+		return std::unexpected(std::format("Shader program linking Failed! :: {}", log));
 	}
 
 	glDetachShader(program, vertex_shader);
@@ -95,5 +102,33 @@ void set_shader_uniform(uint32_t program, const std::string& uniform, const glm:
 
 void set_shader_uniform(uint32_t program, const std::string& uniform, const glm::vec3& value) {
     glUniform3fv(glGetUniformLocation(program, uniform.c_str()), 1, glm::value_ptr(value));
+}
+
+std::expected<std::unordered_map<std::string, uint32_t>, std::string> compile_shaders(const std::array<std::string, 1>& shader_names, const std::string& path) {
+    std::unordered_map<std::string, uint32_t> shaders;
+    for(auto& name : shader_names) {
+        auto vertex_shader = compile_shader(path, name, GL_VERTEX_SHADER);
+        auto fragment_shader = compile_shader(path, name, GL_FRAGMENT_SHADER);
+
+        if(!vertex_shader.has_value()) { 
+            spdlog::info("vertex");
+            return std::unexpected(std::format("{}", vertex_shader.error())); 
+        }
+
+        if(!fragment_shader.has_value()) { 
+            spdlog::info("fragment");
+            return std::unexpected(std::format("{}", fragment_shader.error())); 
+        }
+
+        auto program = link_shaders(vertex_shader.value(), fragment_shader.value());
+        if(!program.has_value()) { 
+            spdlog::info("program");
+            return std::unexpected(std::format("{}", program.error())); 
+        }
+
+        shaders[name] = program.value();
+    }
+
+    return shaders;
 }
 

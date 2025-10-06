@@ -2,23 +2,134 @@
 
 #include <Windows.h>
 
+#include <glm/vec2.hpp>
+#include <glm/vec4.hpp>
+#include <spdlog/spdlog.h>
+
 #include "gl_loader.hpp"
+
+bool initialize_window(Window& window, Renderer& renderer, HINSTANCE instance, int show_window_flags, 
+                       int width, int height, const wchar_t* class_name, const wchar_t* window_title) {
+    WNDCLASSEX window_class {
+        .cbSize = sizeof(WNDCLASSEX),
+        .style = CS_HREDRAW | CS_VREDRAW,
+        .lpfnWndProc = window_proc,
+        .cbClsExtra = NULL,
+        .cbWndExtra = NULL,
+        .hInstance = instance,
+        .hIcon = LoadIcon(NULL, IDI_APPLICATION),
+        .hCursor = LoadCursor(NULL, IDC_ARROW),
+        .hbrBackground = nullptr,
+        .lpszMenuName = NULL,
+        .lpszClassName = class_name,
+        .hIconSm = LoadIcon(NULL, IDI_APPLICATION)
+    };
+
+    if (!RegisterClassEx(&window_class)) {
+        spdlog::error("error registering window class");
+        return false;
+    }
+
+    window.hwnd = CreateWindowEx(NULL, class_name, window_title, WS_OVERLAPPEDWINDOW, 
+                                 CW_USEDEFAULT, CW_USEDEFAULT, width, height, 
+                                 NULL, NULL, instance, &renderer);
+
+    if (!window.hwnd) {
+        spdlog::error("error creating window");
+        return false;
+    }
+
+    window.hdc = GetDC(window.hwnd);
+    PIXELFORMATDESCRIPTOR pfd = {
+        .nSize = sizeof(PIXELFORMATDESCRIPTOR),
+        .nVersion = 1,
+        .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,
+        .iPixelType = PFD_TYPE_RGBA,
+        .cColorBits = 32,
+        .cDepthBits = 24,
+        .cStencilBits = 8,
+        .iLayerType = PFD_MAIN_PLANE
+    };
+
+    int pixel_format = ChoosePixelFormat(window.hdc, &pfd);
+    SetPixelFormat(window.hdc, pixel_format, &pfd);
+    HGLRC temp_context = wglCreateContext(window.hdc);
+    wglMakeCurrent(window.hdc, temp_context);
+
+    load_gl_functions();
+
+    int attribs[] = {
+        WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
+        WGL_CONTEXT_MINOR_VERSION_ARB, 3,
+        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+        0
+    };
+
+    window.hglrc = wglCreateContextAttribsARB(window.hdc, 0, attribs);
+    if(window.hglrc) {
+        wglMakeCurrent(nullptr, nullptr);
+        wglDeleteContext(temp_context);
+        wglMakeCurrent(window.hdc, window.hglrc); 
+    }
+
+    ShowWindow(window.hwnd, show_window_flags);
+    UpdateWindow(window.hwnd);
+
+    return true;
+}
 
 LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
     switch (message) {
+        case WM_CREATE: {
+            spdlog::info("WM_CREATE");
+            return 0;
+        }
         case WM_KEYDOWN: {
+            spdlog::info("WM_KEYDOWN");
             if (wparam == VK_ESCAPE) {
                 DestroyWindow(hwnd);
             }
             return 0; 
         }
         case WM_DESTROY: {
+            spdlog::info("WM_DESTROY");
             PostQuitMessage(0);
             return 0;
         }
     }
 
     return DefWindowProc(hwnd, message, wparam, lparam);
+}
+
+void run_message_loop(Window& window, Renderer& renderer) {
+    MSG message;
+    ZeroMemory(&message, sizeof(MSG));
+    while (true) {
+        if (PeekMessage(&message, NULL, 0, 0, PM_REMOVE)) {
+            if (message.message == WM_QUIT) {
+                break;
+            }
+
+            TranslateMessage(&message);
+            DispatchMessage(&message);
+        }
+        else {
+            RECT client_rect;
+            GetClientRect(window.hwnd, &client_rect);
+
+            int client_width = client_rect.right - client_rect.left;
+            int client_height = client_rect.bottom - client_rect.top;
+
+            glViewport(0, 0, client_width, client_height);
+            glClearColor(0.2157f, 0.1843f, 0.2275f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            glBindVertexArray(renderer.vao);
+            draw(renderer); 
+
+            SwapBuffers(window.hdc);
+        }
+    }
 }
 
 void initialize_buffers(Renderer& renderer) {
@@ -28,7 +139,23 @@ void initialize_buffers(Renderer& renderer) {
     glGenBuffers(1, &renderer.ubo);
 }
 
-void draw(Renderer& renderer, size_t count) {
-    glDrawElementsInstanced(GL_TRIANGLES, count, GL_UNSIGNED_INT, renderer.indices.data(), count / 6);
+void draw(Renderer& renderer) {
+    glDrawElementsInstanced(GL_TRIANGLES, renderer.indices.size(), GL_UNSIGNED_INT, nullptr, renderer.count);
+}
+
+void setup(Renderer& renderer) {
+    glBindVertexArray(renderer.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, renderer.vbo);
+    glBufferData(GL_ARRAY_BUFFER, renderer.vertices.size() * sizeof(glm::vec2), renderer.vertices.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer.ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, renderer.indices.size() * sizeof(uint32_t), renderer.indices.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_UNIFORM_BUFFER, renderer.ubo);
+    glBufferData(GL_UNIFORM_BUFFER, renderer.positions.size() * sizeof(glm::vec4) + renderer.colors.size() * sizeof(glm::vec4), nullptr, GL_STATIC_DRAW);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, renderer.positions.size() * sizeof(glm::vec4), renderer.positions.data());
+    glBufferSubData(GL_UNIFORM_BUFFER, renderer.positions.size() * sizeof(glm::vec4), renderer.colors.size() * sizeof(glm::vec4), renderer.colors.data());
+    glBindBufferBase(GL_UNIFORM_BUFFER, 0, renderer.ubo);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
+    glEnableVertexAttribArray(0);
 }
 

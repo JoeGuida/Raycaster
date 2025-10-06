@@ -2,7 +2,9 @@ build/
 include/opengl
 include/win32
 include/glm
+include/spdlog
 lib/
+log/
 maps/
 .vs/
 *.exe
