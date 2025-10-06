@@ -26,6 +26,7 @@ struct Renderer {
     std::array<glm::vec2, RECT_VERTICES_COUNT> vertices;
     std::array<uint32_t, RECT_INDICES_COUNT> indices;
     std::array<glm::vec4, MAX_OBJECTS> positions;
+    std::array<glm::vec4, MAX_OBJECTS> colors;
 };
 
 bool initialize_window(Window& window, Renderer& renderer, HINSTANCE instance, int show_window_flags, 

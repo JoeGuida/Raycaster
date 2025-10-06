@@ -5,6 +5,7 @@ PFNGLBINDBUFFERPROC               glBindBuffer               = nullptr;
 PFNGLBINDBUFFERBASEPROC           glBindBufferBase           = nullptr;
 PFNGLBINDVERTEXARRAYPROC          glBindVertexArray          = nullptr;
 PFNGLBUFFERDATAPROC               glBufferData               = nullptr;
+PFNGLBUFFERSUBDATAPROC            glBufferSubData            = nullptr;
 PFNGLCOMPILESHADERPROC            glCompileShader            = nullptr;
 PFNGLCREATEPROGRAMPROC            glCreateProgram            = nullptr;
 PFNGLCREATESHADERPROC             glCreateShader             = nullptr;
@@ -34,6 +35,7 @@ void load_gl_functions() {
     glBindBufferBase           = (PFNGLBINDBUFFERBASEPROC)wglGetProcAddress("glBindBufferBase");
     glBindVertexArray          = (PFNGLBINDVERTEXARRAYPROC)wglGetProcAddress("glBindVertexArray");
     glBufferData               = (PFNGLBUFFERDATAPROC)wglGetProcAddress("glBufferData");
+    glBufferSubData            = (PFNGLBUFFERSUBDATAPROC)wglGetProcAddress("glBufferSubData");
     glCompileShader            = (PFNGLCOMPILESHADERPROC)wglGetProcAddress("glCompileShader");
     glCreateProgram            = (PFNGLCREATEPROGRAMPROC)wglGetProcAddress("glCreateProgram");
     glCreateShader             = (PFNGLCREATESHADERPROC)wglGetProcAddress("glCreateShader");

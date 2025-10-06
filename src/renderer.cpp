@@ -82,8 +82,6 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpar
     switch (message) {
         case WM_CREATE: {
             spdlog::info("WM_CREATE");
-            LPCREATESTRUCT p_create_struct = reinterpret_cast<LPCREATESTRUCT>(lparam);
-            SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(p_create_struct->lpCreateParams));
             return 0;
         }
         case WM_KEYDOWN: {
@@ -116,8 +114,14 @@ void run_message_loop(Window& window, Renderer& renderer) {
             DispatchMessage(&message);
         }
         else {
-            glViewport(0, 0, 1280, 720);
-            glClearColor(0.498f, 0.498f, 0.498f, 1.0f);
+            RECT client_rect;
+            GetClientRect(window.hwnd, &client_rect);
+
+            int client_width = client_rect.right - client_rect.left;
+            int client_height = client_rect.bottom - client_rect.top;
+
+            glViewport(0, 0, client_width, client_height);
+            glClearColor(0.2157f, 0.1843f, 0.2275f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             glBindVertexArray(renderer.vao);
@@ -146,7 +150,9 @@ void setup(Renderer& renderer) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer.ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, renderer.indices.size() * sizeof(uint32_t), renderer.indices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_UNIFORM_BUFFER, renderer.ubo);
-    glBufferData(GL_UNIFORM_BUFFER, renderer.positions.size() * sizeof(glm::vec4), renderer.positions.data(), GL_STATIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, renderer.positions.size() * sizeof(glm::vec4) + renderer.colors.size() * sizeof(glm::vec4), nullptr, GL_STATIC_DRAW);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, renderer.positions.size() * sizeof(glm::vec4), renderer.positions.data());
+    glBufferSubData(GL_UNIFORM_BUFFER, renderer.positions.size() * sizeof(glm::vec4), renderer.colors.size() * sizeof(glm::vec4), renderer.colors.data());
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, renderer.ubo);
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
