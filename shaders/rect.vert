@@ -3,8 +3,8 @@
 layout (location = 0) in vec2 pos;
 
 layout (std140, binding = 0) uniform instance_data {
-    vec4 positions[256 * 3];
-    vec4 colors[256 * 3];
+    vec4 positions[256 * 2];
+    vec4 colors[256 * 2];
 };
 
 uniform mat4 view;

@@ -53,13 +53,16 @@ void initialize(Renderer& renderer) {
     glGenBuffers(1, &renderer.vbo);
     glGenBuffers(1, &renderer.ebo);
     glGenBuffers(1, &renderer.ubo);
+    glGenBuffers(1, &renderer.line_ubo);
 }
 
 void draw(Renderer& renderer) {
-    glUseProgram(renderer.rect_shader);
-    glDrawElementsInstanced(GL_TRIANGLES, renderer.indices.size(), GL_UNSIGNED_INT, nullptr, renderer.rect_count);
     glUseProgram(renderer.point_shader);
     glDrawArraysInstanced(GL_POINTS, 6, 1, renderer.point_count);
+    glUseProgram(renderer.line_shader);
+    glDrawArraysInstanced(GL_LINES, 4, 2, renderer.line_count);
+    glUseProgram(renderer.rect_shader);
+    glDrawElementsInstanced(GL_TRIANGLES, renderer.indices.size(), GL_UNSIGNED_INT, nullptr, renderer.rect_count);
 }
 
 void setup(Renderer& renderer) {
@@ -68,11 +71,16 @@ void setup(Renderer& renderer) {
     glBufferData(GL_ARRAY_BUFFER, renderer.vertices.size() * sizeof(glm::vec2), renderer.vertices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer.ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, renderer.indices.size() * sizeof(uint32_t), renderer.indices.data(), GL_STATIC_DRAW);
+
     glBindBuffer(GL_UNIFORM_BUFFER, renderer.ubo);
     glBufferData(GL_UNIFORM_BUFFER, renderer.positions.size() * sizeof(glm::vec4) + renderer.colors.size() * sizeof(glm::vec4), nullptr, GL_STATIC_DRAW);
     glBufferSubData(GL_UNIFORM_BUFFER, 0, renderer.positions.size() * sizeof(glm::vec4), renderer.positions.data());
     glBufferSubData(GL_UNIFORM_BUFFER, renderer.positions.size() * sizeof(glm::vec4), renderer.colors.size() * sizeof(glm::vec4), renderer.colors.data());
     glBindBufferBase(GL_UNIFORM_BUFFER, 0, renderer.ubo);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, renderer.line_ubo);
+    glBufferData(GL_UNIFORM_BUFFER, renderer.line_data.size() * sizeof(glm::vec4), renderer.line_data.data(), GL_STATIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 1, renderer.line_ubo);
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
     glEnableVertexAttribArray(0);

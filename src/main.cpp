@@ -10,6 +10,10 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/rotate_vector.hpp>
+
 #include <opengl/glcorearb.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
@@ -24,6 +28,7 @@
 constexpr int width = 1280;
 constexpr int height = 720;
 constexpr float aspect = width / static_cast<float>(height);
+constexpr float PI = 3.1415926;
 
 // https://lospec.com/palette-list/dull-aquatic
 constexpr std::array<glm::vec4, 10> color_palette = {
@@ -38,6 +43,19 @@ constexpr std::array<glm::vec4, 10> color_palette = {
     glm::vec4(0.7725f, 0.8235f, 0.8078f, 1.0f),  // #C5D2CE
     glm::vec4(0.8275f, 0.8471f, 0.8510f, 1.0f)   // #D3D8D9
 };
+
+void write_player_fov_to_buffers(Renderer& renderer, const glm::vec4& position, const glm::vec4& direction) {
+    static constexpr float fov = 45.0f;
+    static constexpr float ray_length = 10.0f;
+    glm::vec3 dir(direction.x * ray_length, direction.y * ray_length, 0.0f);
+    float rotation_amount = glm::radians(fov) / width;
+
+    for(int i = -width / 2; i < width / 2; i++) {
+        glm::vec3 v = glm::rotate(dir, i * rotation_amount, glm::vec3(0.0f, 0.0f, 1.0f));
+        renderer.line_data[renderer.line_count] = glm::vec4(position.x, position.y, position.x + v.x, position.y + v.y);
+        renderer.line_count++;
+    }
+}
 
 int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int show_window_flags) {
     std::fflush(stdout);
@@ -77,13 +95,14 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
     write_map_to_buffers(map, renderer, aspect, color_palette);
 
     spdlog::info("compiling shaders");
-    auto shaders = compile_shaders({"rect", "point"}, env_vars.value()["SHADER_PATH"]);
+    auto shaders = compile_shaders({"rect", "line", "point"}, env_vars.value()["SHADER_PATH"]);
     if(!shaders.has_value()) {
         spdlog::info("{}", shaders.error());
         return -1;
     }
 
     renderer.rect_shader = shaders.value()["rect"];
+    renderer.line_shader = shaders.value()["line"];
     renderer.point_shader = shaders.value()["point"];
 
     spdlog::info("setting up renderer to draw");
@@ -91,13 +110,19 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
     float x = rect_size.x / 2.0f;
     float y = rect_size.y / 2.0f;
     renderer.vertices = { 
+        // rect
         glm::vec2(-x,  y),
         glm::vec2( x,  y),
         glm::vec2(-x, -y),
-        glm::vec2( x, -y)
+        glm::vec2( x, -y),
+        //line
+        glm::vec2(0.0f, 0.0f),
+        glm::vec2(1.0f, 0.0f),
+        // point
+        glm::vec2(0.0f, 0.0f)
     };
 
-    renderer.indices = { 0, 2, 1, 1, 2, 3, 0, 1 };
+    renderer.indices = { 0, 2, 1, 1, 2, 3 };
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_PROGRAM_POINT_SIZE);
@@ -116,19 +141,26 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
     set_shader_uniform(shaders.value()["rect"], "projection", projection);
     set_shader_uniform(shaders.value()["rect"], "view", view);
 
+    glUseProgram(shaders.value()["line"]);
+    set_shader_uniform(shaders.value()["line"], "projection", projection);
+    set_shader_uniform(shaders.value()["line"], "view", view);
+
     glUseProgram(shaders.value()["point"]);
     set_shader_uniform(shaders.value()["point"], "projection", projection);
     set_shader_uniform(shaders.value()["point"], "view", view);
-    set_shader_uniform(shaders.value()["point"], "size", 10.0f);
+    set_shader_uniform(shaders.value()["point"], "size", 5.0f);
 
     // Objects
-    renderer.positions[POINT_OFFSET + renderer.point_count] = glm::vec4(0.0f);
+    glm::vec4 player_position(-aspect + rect_size.x * 3.0f, 0.8f, 0.0f, 0.0f);
+    glm::vec4 player_direction(0.0f, -1.0f, 0.0f, 0.0f);
+    renderer.positions[POINT_OFFSET + renderer.point_count] = player_position;
     renderer.colors[POINT_OFFSET + renderer.point_count] = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
     renderer.point_count++;
 
+    write_player_fov_to_buffers(renderer, player_position, player_direction);
+
     spdlog::info("starting message loop");
 
-    glUseProgram(shaders.value()["rect"]);
     setup(renderer);
     run_message_loop(window.value(), renderer);
 
