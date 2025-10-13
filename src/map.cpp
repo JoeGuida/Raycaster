@@ -48,11 +48,11 @@ void write_map_to_buffers(const Map& map, Renderer& renderer, float aspect, cons
                     (1.0f - half_rect_size.y) - rect_size.y * i
                 );
 
-                renderer.positions[renderer.count] = glm::vec4(position.x, position.y, 0.0f, 0.0f);
+                renderer.positions[renderer.rect_count] = glm::vec4(position.x, position.y, 0.0f, 0.0f);
                 int color_index = map.data[map_index] - '0';
 
-                renderer.colors[renderer.count] = color_palette[color_index];
-                renderer.count++;
+                renderer.colors[renderer.rect_count] = color_palette[color_index];
+                renderer.rect_count++;
             }
         }
     }

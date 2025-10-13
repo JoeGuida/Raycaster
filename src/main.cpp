@@ -1,4 +1,5 @@
 #include <array>
+#include <cstdio>
 #include <format>
 #include <print>
 #include <unordered_map>
@@ -39,6 +40,7 @@ constexpr std::array<glm::vec4, 10> color_palette = {
 };
 
 int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int show_window_flags) {
+    std::fflush(stdout);
     try {
         auto logger = spdlog::basic_logger_mt("logger", "log/log.log", true);
         spdlog::set_default_logger(logger);
@@ -47,19 +49,11 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
     }
     catch (const spdlog::spdlog_ex& ex) {
         std::println("logger init failed: {}", ex.what());
+        std::fflush(stdout);
         return -1;
     }
-
-    Window window;
-    Renderer renderer;
-    renderer.count = 0;
-    spdlog::info("initializing window");
-    if(!initialize_window(window, renderer, instance, show_window_flags, width, height, L"Window Class", L"Raycaster")) {
-        spdlog::error("window initialization failed");
-        return -1;
-    }
-
     spdlog::info("logger: 'logger' initialized");
+
     spdlog::info("reading environment variables");
     auto env_vars = load_environment_variables({"SHADER_PATH", "MAP_PATH"});
     if(!env_vars.has_value()) {
@@ -67,19 +61,32 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
         return -1;
     }
 
+    spdlog::info("initializing window");
+    auto window = initialize_window(instance, show_window_flags, width, height, L"Window Class", L"Raycaster");
+    if(!window.has_value()) {
+        spdlog::error("{}", window.error());
+    }
+
+    spdlog::info("initializing renderer");
+    Renderer renderer;
+    initialize(renderer);
+
+    spdlog::info("loading map");
     Map map;
     load_map_from_file(map, env_vars.value()["MAP_PATH"] + "/map.txt");
     write_map_to_buffers(map, renderer, aspect, color_palette);
 
     spdlog::info("compiling shaders");
-    auto shaders = compile_shaders({"default"}, env_vars.value()["SHADER_PATH"]);
+    auto shaders = compile_shaders({"rect", "point"}, env_vars.value()["SHADER_PATH"]);
     if(!shaders.has_value()) {
         spdlog::info("{}", shaders.error());
         return -1;
     }
 
-    initialize_buffers(renderer);
+    renderer.rect_shader = shaders.value()["rect"];
+    renderer.point_shader = shaders.value()["point"];
 
+    spdlog::info("setting up renderer to draw");
     glm::vec2 rect_size(aspect / map.width, 2.0f / map.height);
     float x = rect_size.x / 2.0f;
     float y = rect_size.y / 2.0f;
@@ -90,13 +97,13 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
         glm::vec2( x, -y)
     };
 
-    renderer.indices = { 0, 2, 1, 1, 2, 3 };
-    setup(renderer);
+    renderer.indices = { 0, 2, 1, 1, 2, 3, 0, 1 };
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_PROGRAM_POINT_SIZE);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    glUseProgram(shaders.value()["default"]);
+    spdlog::info("setting shader uniforms");
 
     glm::mat4 projection = glm::ortho(-aspect, aspect, -1.0f, 1.0f, -1.0f, 10.0f);
     glm::mat4 view = glm::lookAt(
@@ -104,11 +111,26 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
         glm::vec3(0.0f, 0.0f, -1.0f),
         glm::vec3(0.0f, 1.0f, 0.0f));
 
-    set_shader_uniform(shaders.value()["default"], "projection", projection);
-    set_shader_uniform(shaders.value()["default"], "view", view);
+
+    glUseProgram(shaders.value()["rect"]);
+    set_shader_uniform(shaders.value()["rect"], "projection", projection);
+    set_shader_uniform(shaders.value()["rect"], "view", view);
+
+    glUseProgram(shaders.value()["point"]);
+    set_shader_uniform(shaders.value()["point"], "projection", projection);
+    set_shader_uniform(shaders.value()["point"], "view", view);
+    set_shader_uniform(shaders.value()["point"], "size", 10.0f);
+
+    // Objects
+    renderer.positions[POINT_OFFSET + renderer.point_count] = glm::vec4(0.0f);
+    renderer.colors[POINT_OFFSET + renderer.point_count] = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    renderer.point_count++;
 
     spdlog::info("starting message loop");
-    run_message_loop(window, renderer);
+
+    glUseProgram(shaders.value()["rect"]);
+    setup(renderer);
+    run_message_loop(window.value(), renderer);
 
     return 0;
 }

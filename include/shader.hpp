@@ -5,6 +5,7 @@
 #include <expected>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <Windows.h>
 
@@ -13,9 +14,10 @@
 
 std::expected<uint32_t, std::string> compile_shader(const std::string& source_folder, const std::string& name, uint32_t type);
 std::expected<uint32_t, std::string> link_shaders(uint32_t vertex_shader, uint32_t fragment_shader);
+void set_shader_uniform(uint32_t program, const std::string& uniform, float value);
 void set_shader_uniform(uint32_t program, const std::string& uniform, const glm::mat4x4& value);
 void set_shader_uniform(uint32_t program, const std::string& uniform, const glm::vec3& value);
-std::expected<std::unordered_map<std::string, uint32_t>, std::string> compile_shaders(const std::array<std::string, 1>& shader_names, const std::string& path);
+std::expected<std::unordered_map<std::string, uint32_t>, std::string> compile_shaders(const std::vector<std::string>& shader_names, const std::string& path);
 
 #endif
 
