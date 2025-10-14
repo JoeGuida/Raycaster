@@ -14,7 +14,8 @@ out vec3 vertex_color;
 void main() {
     vec2 start = positions[gl_InstanceID].xy;
     vec2 end = positions[gl_InstanceID].zw;
-    gl_Position = projection * view * vec4(start + pos.x * (end - start), 0.0, 1.0);
+    vec2 vertex = gl_VertexID % 2 == 0 ? start : end;
+    gl_Position = projection * view * vec4(vertex, 0.0, 1.0);
     vertex_color = vec3(1.0, 1.0, 1.0);    
 }
 

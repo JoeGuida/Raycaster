@@ -9,14 +9,8 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
+#include "constants.hpp"
 #include "window.hpp"
-
-constexpr size_t OBJECT_COUNT_PER_PRIMITIVE = 256; // supported instances per primitive type
-constexpr size_t MAX_OBJECTS = 256 * 2; // does not include lines as lines need separate data
-constexpr size_t MAX_LINES = 2048;
-constexpr size_t TOTAL_VERTICES_COUNT = 4 + 2 + 1; // Rect / Line / Point
-constexpr size_t RECT_INDICES_COUNT = 6;
-constexpr uint32_t POINT_OFFSET = OBJECT_COUNT_PER_PRIMITIVE; // ubo index = gl_InstanceId + OFFSET
 
 struct Renderer {
     uint32_t vao;

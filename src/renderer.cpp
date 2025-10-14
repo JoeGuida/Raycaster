@@ -4,7 +4,6 @@
 
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
-#include <spdlog/spdlog.h>
 
 #include "gl_loader.hpp"
 

@@ -1,6 +1,8 @@
 #include <array>
+#include <cfloat>
 #include <cstdio>
 #include <format>
+#include <optional>
 #include <print>
 #include <unordered_map>
 
@@ -21,6 +23,7 @@
 #include "environment.hpp"
 #include "gl_loader.hpp"
 #include "map.hpp"
+#include "math.hpp"
 #include "renderer.hpp"
 #include "shader.hpp"
 #include "window.hpp"
@@ -47,13 +50,50 @@ constexpr std::array<glm::vec4, 10> color_palette = {
 void write_player_fov_to_buffers(Renderer& renderer, const glm::vec4& position, const glm::vec4& direction) {
     static constexpr float fov = 45.0f;
     static constexpr float ray_length = 10.0f;
-    glm::vec3 dir(direction.x * ray_length, direction.y * ray_length, 0.0f);
+    glm::vec3 dir = glm::normalize(glm::vec3(direction.x, direction.y, 0.0f)) * ray_length;
     float rotation_amount = glm::radians(fov) / width;
 
     for(int i = -width / 2; i < width / 2; i++) {
         glm::vec3 v = glm::rotate(dir, i * rotation_amount, glm::vec3(0.0f, 0.0f, 1.0f));
         renderer.line_data[renderer.line_count] = glm::vec4(position.x, position.y, position.x + v.x, position.y + v.y);
         renderer.line_count++;
+    }
+}
+
+void raycast_fov(Renderer& renderer) {
+    for(int i = 0; i < renderer.rect_count; i++) {
+        glm::vec2 v0 = glm::vec2(renderer.positions[i].x, renderer.positions[i].y) + renderer.vertices[0];
+        glm::vec2 v1 = glm::vec2(renderer.positions[i].x, renderer.positions[i].y) + renderer.vertices[1];
+        glm::vec2 v2 = glm::vec2(renderer.positions[i].x, renderer.positions[i].y) + renderer.vertices[2];
+        glm::vec2 v3 = glm::vec2(renderer.positions[i].x, renderer.positions[i].y) + renderer.vertices[3];
+
+        // { line.start.x line.start.y line.end.x, line.end.y
+        std::array<glm::vec4, 4> lines = { 
+            glm::vec4(v0.x, v0.y, v1.x, v1.y),
+            glm::vec4(v1.x, v1.y, v3.x, v3.y),
+            glm::vec4(v3.x, v3.y, v2.x, v2.y),
+            glm::vec4(v2.x, v2.y, v0.x, v0.y)
+        };
+
+        for(int j = 0; j < renderer.line_data.size(); j++) {
+            glm::vec2 start(renderer.line_data[j].x, renderer.line_data[j].y);
+            glm::vec2 end(renderer.line_data[j].z, renderer.line_data[j].w);
+            glm::vec2 dir = end - start;
+
+            float closest_t = INFINITY;
+            for(const glm::vec4& rect_line : lines) {
+                std::optional<float> t = raycast(renderer.line_data[j], rect_line);
+                if(t.has_value() && t < closest_t) {
+                    closest_t = t.value();
+                }
+            }
+
+            if(closest_t != INFINITY) {
+                glm::vec2 point = start + (end - start) * closest_t;
+                renderer.line_data[j] = glm::vec4(start.x, start.y, point.x, point.y); 
+                spdlog::info("Distance: {}", closest_t);
+            }
+        }
     }
 }
 
@@ -148,7 +188,7 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
     glUseProgram(shaders.value()["point"]);
     set_shader_uniform(shaders.value()["point"], "projection", projection);
     set_shader_uniform(shaders.value()["point"], "view", view);
-    set_shader_uniform(shaders.value()["point"], "size", 5.0f);
+    set_shader_uniform(shaders.value()["point"], "size", 3.0f);
 
     // Objects
     glm::vec4 player_position(-aspect + rect_size.x * 3.0f, 0.8f, 0.0f, 0.0f);
@@ -158,6 +198,7 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
     renderer.point_count++;
 
     write_player_fov_to_buffers(renderer, player_position, player_direction);
+    raycast_fov(renderer);
 
     spdlog::info("starting message loop");
 
