@@ -42,6 +42,7 @@ void initialize(Renderer& renderer) {
     renderer.rect_count = 0;
     renderer.line_count = 0;
     renderer.point_count = 0;
+    renderer.view_count = 0;
 
     for(int i = 0; i < renderer.positions.size(); i++) {
         renderer.positions[i] = glm::vec4(0.0f);
@@ -53,6 +54,7 @@ void initialize(Renderer& renderer) {
     glGenBuffers(1, &renderer.ebo);
     glGenBuffers(1, &renderer.ubo);
     glGenBuffers(1, &renderer.line_ubo);
+    glGenBuffers(1, &renderer.view_ubo);
 }
 
 void draw(Renderer& renderer) {
@@ -60,6 +62,8 @@ void draw(Renderer& renderer) {
     glDrawArraysInstanced(GL_POINTS, 6, 1, renderer.point_count);
     glUseProgram(renderer.line_shader);
     glDrawArraysInstanced(GL_LINES, 4, 2, renderer.line_count);
+    glUseProgram(renderer.view_shader);
+    glDrawArraysInstanced(GL_LINES, 4, 2, renderer.view_count);
     glUseProgram(renderer.rect_shader);
     glDrawElementsInstanced(GL_TRIANGLES, renderer.indices.size(), GL_UNSIGNED_INT, nullptr, renderer.rect_count);
 }
@@ -80,6 +84,10 @@ void setup(Renderer& renderer) {
     glBindBuffer(GL_UNIFORM_BUFFER, renderer.line_ubo);
     glBufferData(GL_UNIFORM_BUFFER, renderer.line_data.size() * sizeof(glm::vec4), renderer.line_data.data(), GL_STATIC_DRAW);
     glBindBufferBase(GL_UNIFORM_BUFFER, 1, renderer.line_ubo);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, renderer.view_ubo);
+    glBufferData(GL_UNIFORM_BUFFER, renderer.view_data.size() * sizeof(glm::vec4), renderer.view_data.data(), GL_STATIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 2, renderer.view_ubo);
 
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(glm::vec2), (void*)0);
     glEnableVertexAttribArray(0);
