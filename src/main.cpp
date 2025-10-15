@@ -22,6 +22,7 @@
 
 #include "environment.hpp"
 #include "gl_loader.hpp"
+#include "input.hpp"
 #include "map.hpp"
 #include "math.hpp"
 #include "renderer.hpp"
@@ -91,7 +92,6 @@ void raycast_fov(Renderer& renderer) {
             if(closest_t != INFINITY) {
                 glm::vec2 point = start + (end - start) * closest_t;
                 renderer.line_data[j] = glm::vec4(start.x, start.y, point.x, point.y); 
-                spdlog::info("Distance: {}", closest_t);
             }
         }
     }
@@ -120,7 +120,9 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
     }
 
     spdlog::info("initializing window");
-    auto window = initialize_window(instance, show_window_flags, width, height, L"Window Class", L"Raycaster");
+
+    Input input { .initialized = false };
+    auto window = initialize_window(instance, show_window_flags, width, height, L"Window Class", L"Raycaster", input);
     if(!window.has_value()) {
         spdlog::error("{}", window.error());
     }

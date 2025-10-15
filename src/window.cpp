@@ -13,14 +13,24 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpar
     switch (message) {
         case WM_CREATE: {
             spdlog::info("WM_CREATE");
+            LPCREATESTRUCT p_create_struct = reinterpret_cast<LPCREATESTRUCT>(lparam);
+            SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(p_create_struct->lpCreateParams));
             return 0;
         }
         case WM_KEYDOWN: {
             spdlog::info("WM_KEYDOWN");
+
             if (wparam == VK_ESCAPE) {
                 DestroyWindow(hwnd);
             }
-            return 0; 
+            return 0;
+        }
+        case WM_INPUT: {
+            Input* input = reinterpret_cast<Input*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+            if(input && input->initialized) {
+                handle_inputs(lparam, hwnd);
+            }
+            return 0;
         }
         case WM_DESTROY: {
             spdlog::info("WM_DESTROY");
@@ -34,7 +44,8 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpar
 
 std::expected<Window, std::string> initialize_window(HINSTANCE instance, int show_window_flags, 
                                                      int width, int height, 
-                                                     const wchar_t* class_name, const wchar_t* window_title) 
+                                                     const wchar_t* class_name, const wchar_t* window_title, 
+                                                     Input& input) 
 {
     WNDCLASSEX window_class {
         .cbSize = sizeof(WNDCLASSEX),
@@ -57,11 +68,14 @@ std::expected<Window, std::string> initialize_window(HINSTANCE instance, int sho
 
     HWND hwnd = CreateWindowEx(NULL, class_name, window_title, WS_OVERLAPPEDWINDOW, 
                                  CW_USEDEFAULT, CW_USEDEFAULT, width, height, 
-                                 NULL, NULL, instance, NULL);
+                                 NULL, NULL, instance, &input);
 
     if (!hwnd) {
         return std::unexpected("error creating window");
     }
+
+    setup_input_devices(input, hwnd);
+    input.initialized = true;
 
     HDC hdc = GetDC(hwnd);
     PIXELFORMATDESCRIPTOR pfd = {
