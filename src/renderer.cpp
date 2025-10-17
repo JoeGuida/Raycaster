@@ -44,11 +44,6 @@ void initialize(Renderer& renderer) {
     renderer.point_count = 0;
     renderer.view_count = 0;
 
-    for(int i = 0; i < renderer.positions.size(); i++) {
-        renderer.positions[i] = glm::vec4(0.0f);
-        renderer.colors[i] = glm::vec4(0.0f);
-    }
-
     glGenVertexArrays(1, &renderer.vao);
     glGenBuffers(1, &renderer.vbo);
     glGenBuffers(1, &renderer.ebo);
@@ -58,13 +53,13 @@ void initialize(Renderer& renderer) {
 }
 
 void draw(Renderer& renderer) {
-    glUseProgram(renderer.point_shader);
+    glUseProgram(renderer.shaders[2]);
     glDrawArraysInstanced(GL_POINTS, 6, 1, renderer.point_count);
-    glUseProgram(renderer.line_shader);
+    glUseProgram(renderer.shaders[1]);
     glDrawArraysInstanced(GL_LINES, 4, 2, renderer.line_count);
-    glUseProgram(renderer.view_shader);
+    glUseProgram(renderer.shaders[3]);
     glDrawArraysInstanced(GL_LINES, 4, 2, renderer.view_count);
-    glUseProgram(renderer.rect_shader);
+    glUseProgram(renderer.shaders[0]);
     glDrawElementsInstanced(GL_TRIANGLES, renderer.indices.size(), GL_UNSIGNED_INT, nullptr, renderer.rect_count);
 }
 

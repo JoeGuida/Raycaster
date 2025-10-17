@@ -54,7 +54,7 @@ void write_player_fov_to_buffers(Renderer& renderer, const glm::vec4& position, 
     glm::vec3 dir = glm::normalize(glm::vec3(direction.x, direction.y, 0.0f)) * ray_length;
     float rotation_amount = glm::radians(fov) / width;
 
-    for(int i = -width / 2; i < width / 2; i++) {
+    for(int i = width / 2; i > -width / 2; i--) {
         glm::vec3 v = glm::rotate(dir, i * rotation_amount, glm::vec3(0.0f, 0.0f, 1.0f));
         renderer.line_data[renderer.line_count] = glm::vec4(position.x, position.y, position.x + v.x, position.y + v.y);
         renderer.line_count++;
@@ -63,6 +63,8 @@ void write_player_fov_to_buffers(Renderer& renderer, const glm::vec4& position, 
 
 void raycast_fov(Renderer& renderer, const glm::vec2& direction) {
     float max_distance = 2.5f;
+    std::vector<glm::vec4> lines;
+    lines.reserve(renderer.rect_count * 4);
 
     for(int i = 0; i < renderer.rect_count; i++) {
         glm::vec2 v0 = glm::vec2(renderer.positions[i].x, renderer.positions[i].y) + renderer.vertices[0];
@@ -70,38 +72,40 @@ void raycast_fov(Renderer& renderer, const glm::vec2& direction) {
         glm::vec2 v2 = glm::vec2(renderer.positions[i].x, renderer.positions[i].y) + renderer.vertices[2];
         glm::vec2 v3 = glm::vec2(renderer.positions[i].x, renderer.positions[i].y) + renderer.vertices[3];
 
-        // { line.start.x line.start.y line.end.x, line.end.y
-        std::array<glm::vec4, 4> lines = { 
-            glm::vec4(v0.x, v0.y, v1.x, v1.y),
-            glm::vec4(v1.x, v1.y, v3.x, v3.y),
-            glm::vec4(v3.x, v3.y, v2.x, v2.y),
-            glm::vec4(v2.x, v2.y, v0.x, v0.y)
-        };
+        lines.emplace_back(glm::vec4(v0.x, v0.y, v1.x, v1.y));
+        lines.emplace_back(glm::vec4(v1.x, v1.y, v3.x, v3.y));
+        lines.emplace_back(glm::vec4(v3.x, v3.y, v2.x, v2.y));
+        lines.emplace_back(glm::vec4(v2.x, v2.y, v0.x, v0.y));
+    }
 
-        for(int j = 0; j < renderer.line_data.size(); j++) {
-            glm::vec2 start(renderer.line_data[j].x, renderer.line_data[j].y);
-            glm::vec2 end(renderer.line_data[j].z, renderer.line_data[j].w);
-            glm::vec2 dir = end - start;
+    for(int i = 0; i < renderer.line_data.size(); i++) {
+        glm::vec2 start(renderer.line_data[i].x, renderer.line_data[i].y);
+        glm::vec2 end(renderer.line_data[i].z, renderer.line_data[i].w);
+        glm::vec2 dir = end - start;
 
-            float closest_t = INFINITY;
-            for(const glm::vec4& rect_line : lines) {
-                std::optional<float> t = raycast(renderer.line_data[j], rect_line);
-                if(t.has_value() && t < closest_t) {
-                    closest_t = t.value();
-                }
+        float closest_t = INFINITY;
+        glm::vec4 color;
+        for(int j = 0; j < lines.size(); j++) {
+            std::optional<float> t = raycast(renderer.line_data[i], lines[j]);
+            if(t.has_value() && t.value() < closest_t) {
+                closest_t = t.value();
+                color = renderer.colors[j / 4];
             }
+        }
 
-            if(closest_t != INFINITY) {
-                glm::vec4 v = renderer.line_data[j];
-                glm::vec2 ray_direction = glm::normalize(glm::vec2(v.z - v.x, v.w - v.y));
-                float ray_angle = atan2(ray_direction.y, ray_direction.x);
-                float player_angle = atan2(direction.y, direction.x);
-                float corrected_distance = closest_t * cos(ray_angle - player_angle);
+        if(closest_t != INFINITY) {
+            glm::vec4 v = renderer.line_data[i];
+            glm::vec2 ray_direction = glm::normalize(glm::vec2(v.z - v.x, v.w - v.y));
+            float ray_angle = atan2(ray_direction.y, ray_direction.x);
+            float player_angle = atan2(direction.y, direction.x);
+            float corrected_distance = closest_t * cos(ray_angle - player_angle);
 
-                glm::vec2 point = start + (end - start) * closest_t;
-                renderer.line_data[j] = glm::vec4(start.x, start.y, point.x, point.y); 
-                renderer.view_data[j].x = glm::clamp(max_distance * corrected_distance, 0.0f, 1.0f);
-            }
+            glm::vec2 point = start + (end - start) * closest_t;
+            renderer.line_data[i] = glm::vec4(start.x, start.y, point.x, point.y); 
+            renderer.view_data[i] = glm::vec4(
+                glm::clamp(max_distance * corrected_distance, 0.0f, 1.0f),
+                color.x, color.y, color.z
+            );
         }
     }
 }
@@ -129,7 +133,6 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
     }
 
     spdlog::info("initializing window");
-
     Input input { .initialized = false };
     auto window = initialize_window(instance, show_window_flags, width, height, L"Window Class", L"Raycaster", input);
     if(!window.has_value()) {
@@ -140,10 +143,15 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
     Renderer renderer;
     initialize(renderer);
 
+    // pick and load a random map
     spdlog::info("loading map");
     Map map;
-    load_map_from_file(map, env_vars.value()["MAP_PATH"] + "/map.txt");
+    std::string map_filepath = std::format("{}/map.txt", env_vars.value()["MAP_PATH"]);
+    load_map_from_file(map, map_filepath);
     write_map_to_buffers(map, renderer, aspect, color_palette);
+
+    renderer.positions[renderer.rect_count] = glm::vec4(0.0f);
+    renderer.colors[renderer.rect_count] = color_palette[8];
 
     spdlog::info("compiling shaders");
     auto shaders = compile_shaders({"rect", "line", "point", "view"}, env_vars.value()["SHADER_PATH"]);
@@ -152,10 +160,12 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
         return -1;
     }
 
-    renderer.rect_shader = shaders.value()["rect"];
-    renderer.line_shader = shaders.value()["line"];
-    renderer.point_shader = shaders.value()["point"];
-    renderer.view_shader = shaders.value()["view"];
+    renderer.shaders = { 
+        shaders.value()["rect"], 
+        shaders.value()["line"], 
+        shaders.value()["point"], 
+        shaders.value()["view"] 
+    };
 
     spdlog::info("setting up renderer to draw");
     glm::vec2 rect_size(aspect / map.width, 2.0f / map.height);
@@ -174,8 +184,6 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
         glm::vec2(0.0f, 0.0f)
     };
 
-    renderer.indices = { 0, 2, 1, 1, 2, 3 };
-
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_PROGRAM_POINT_SIZE);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -189,22 +197,14 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
         glm::vec3(0.0f, 1.0f, 0.0f));
 
 
-    glUseProgram(shaders.value()["rect"]);
-    set_shader_uniform(shaders.value()["rect"], "projection", projection);
-    set_shader_uniform(shaders.value()["rect"], "view", view);
-
-    glUseProgram(shaders.value()["line"]);
-    set_shader_uniform(shaders.value()["line"], "projection", projection);
-    set_shader_uniform(shaders.value()["line"], "view", view);
+    for(auto shader : renderer.shaders) { 
+        glUseProgram(shader);
+        set_shader_uniform(shader, "projection", projection);
+        set_shader_uniform(shader, "view", view);
+    }
 
     glUseProgram(shaders.value()["point"]);
-    set_shader_uniform(shaders.value()["point"], "projection", projection);
-    set_shader_uniform(shaders.value()["point"], "view", view);
     set_shader_uniform(shaders.value()["point"], "size", 3.0f);
-
-    glUseProgram(shaders.value()["view"]);
-    set_shader_uniform(shaders.value()["view"], "projection", projection);
-    set_shader_uniform(shaders.value()["view"], "view", view);
 
     // Objects
     glm::vec4 player_position(-aspect + rect_size.x * 3.0f, 0.8f, 0.0f, 0.0f);

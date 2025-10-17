@@ -22,10 +22,7 @@ struct Renderer {
     uint32_t line_ubo;
     uint32_t view_ubo;
 
-    uint32_t rect_shader;
-    uint32_t line_shader;
-    uint32_t point_shader;
-    uint32_t view_shader;
+    std::array<uint32_t, 4> shaders;
 
     size_t rect_count;
     size_t line_count;

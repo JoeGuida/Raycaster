@@ -38,6 +38,7 @@ void load_map_from_file(Map& map, const std::string& filepath) {
 void write_map_to_buffers(const Map& map, Renderer& renderer, float aspect, const std::array<glm::vec4, 10>& color_palette) {
     glm::vec2 rect_size(aspect / map.width, 2.0f / map.height);
     glm::vec2 half_rect_size = rect_size / 2.0f;
+
     for(int i = 0; i < map.height; i++) {
         for(int j = 0; j < map.width; j++) {
 

@@ -17,14 +17,6 @@ LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpar
             SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(p_create_struct->lpCreateParams));
             return 0;
         }
-        case WM_KEYDOWN: {
-            spdlog::info("WM_KEYDOWN");
-
-            if (wparam == VK_ESCAPE) {
-                DestroyWindow(hwnd);
-            }
-            return 0;
-        }
         case WM_INPUT: {
             Input* input = reinterpret_cast<Input*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
             if(input && input->initialized) {
