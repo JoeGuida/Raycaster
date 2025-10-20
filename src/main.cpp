@@ -1,50 +1,15 @@
-#include <array>
-#include <cfloat>
-#include <cstdio>
-#include <expected>
-#include <format>
-#include <optional>
-#include <print>
-#include <unordered_map>
-
-#include <Windows.h>
-#include <gl/GL.h>
-
-#include <glm/vec2.hpp>
-#include <glm/vec4.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
-#include <opengl/glcorearb.h>
-#include <spdlog/spdlog.h>
-
-#include "camera.hpp"
-#include "constants.hpp"
-#include "convert.hpp"
-#include "environment.hpp"
-#include "gl_loader.hpp"
-#include "input.hpp"
-#include "logger.hpp"
-#include "map.hpp"
-#include "math.hpp"
-#include "renderer.hpp"
-#include "scene.hpp"
-#include "shader.hpp"
-#include "window.hpp"
+#include "main.hpp"
 
 int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line, int show_window_flags) {
-    Scene scene {
-        .background_color = glm::vec3(0.2157f, 0.1843f, 0.2275f)
-    };
-
     if(auto logger = init_logger(); !logger.has_value()) {
         std::println("{}", logger.error());
     }
 
-    spdlog::info("reading environment variables");
-    auto env_vars = load_environment_variables({"SHADER_PATH", "MAP_PATH"});
-    if(!env_vars.has_value()) {
-        spdlog::error("{}", env_vars.error());
-        return -1;
+    std::filesystem::path current_path = std::filesystem::current_path();
+    std::filesystem::path shader_path = current_path / "shaders";
+    std::filesystem::path map_path = current_path / "maps";
+    if(shader_path.empty() || map_path.empty()) {
+        spdlog::error("environment variables could not be read!");
     }
 
     spdlog::info("initializing window");
@@ -54,10 +19,9 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
         spdlog::error("{}", window.error());
     }
 
-    spdlog::info("initializing renderer");
-    Renderer renderer;
-    initialize(renderer);
-    renderer.scene_data = scene;
+    Scene scene {
+        .background_color = glm::vec3(0.2157f, 0.1843f, 0.2275f)
+    };
 
     Camera camera {
         .position = glm::vec4(),
@@ -66,15 +30,15 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
         .aspect = width / static_cast<float>(height)
     };
 
-    // pick and load a random map
+    spdlog::info("initializing renderer");
+    Renderer renderer;
+    initialize(renderer);
+    renderer.scene_data = scene;
+
     spdlog::info("loading map");
     Map map;
-    std::string map_filepath = std::format("{}/map.txt", env_vars.value()["MAP_PATH"]);
-    load_map_from_file(map, map_filepath);
+    load_map_from_file(map, (map_path / "map.txt").string());
     write_map_to_buffers(map, renderer, camera.aspect, color_palette);
-
-    renderer.positions[renderer.rect_count] = glm::vec4(0.0f);
-    renderer.colors[renderer.rect_count] = to_vec4(color_palette[8]);
 
     spdlog::info("setting up renderer to draw");
     glm::vec2 rect_size(camera.aspect / map.width, 2.0f / map.height);
@@ -82,16 +46,13 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
     float x = rect_size.x / 2.0f;
     float y = rect_size.y / 2.0f;
     renderer.vertices = { 
-        // rect
-        glm::vec2(-x,  y),
+        glm::vec2(-x,  y), // rect
         glm::vec2( x,  y),
         glm::vec2(-x, -y),
         glm::vec2( x, -y),
-        //line
-        glm::vec2(0.0f, 0.0f),
+        glm::vec2(0.0f, 0.0f), // line
         glm::vec2(0.0f, 1.0f),
-        // point
-        glm::vec2(0.0f, 0.0f)
+        glm::vec2(0.0f, 0.0f) // point
     };
 
     glm::mat4 projection = glm::ortho(-camera.aspect, camera.aspect, -1.0f, 1.0f, -1.0f, 10.0f);
@@ -101,7 +62,7 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
         glm::vec3(0.0f, 1.0f, 0.0f));
 
     spdlog::info("compiling shaders");
-    auto shaders = compile_shaders({"rect", "line", "point", "view"}, env_vars.value()["SHADER_PATH"]);
+    auto shaders = compile_shaders({"rect", "line", "point", "view"}, shader_path.string());
     if(!shaders.has_value()) {
         spdlog::info("{}", shaders.error());
         return -1;
