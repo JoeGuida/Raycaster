@@ -8,6 +8,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 
+#include "convert.hpp"
 #include "renderer.hpp"
 
 void load_map_from_file(Map& map, const std::string& filepath) {
@@ -35,7 +36,7 @@ void load_map_from_file(Map& map, const std::string& filepath) {
     file.close();
 }
 
-void write_map_to_buffers(const Map& map, Renderer& renderer, float aspect, const std::array<glm::vec4, 10>& color_palette) {
+void write_map_to_buffers(const Map& map, Renderer& renderer, float aspect, const std::array<glm::vec3, 10>& color_palette) {
     glm::vec2 rect_size(aspect / map.width, 2.0f / map.height);
     glm::vec2 half_rect_size = rect_size / 2.0f;
 
@@ -52,9 +53,10 @@ void write_map_to_buffers(const Map& map, Renderer& renderer, float aspect, cons
                 renderer.positions[renderer.rect_count] = glm::vec4(position.x, position.y, 0.0f, 0.0f);
                 int color_index = map.data[map_index] - '0';
 
-                renderer.colors[renderer.rect_count] = color_palette[color_index];
+                renderer.colors[renderer.rect_count] = to_vec4(color_palette[color_index]);
                 renderer.rect_count++;
             }
         }
     }
 }
+

@@ -18,7 +18,7 @@ struct Map {
 };
 
 void load_map_from_file(Map& map, const std::string& filepath);
-void write_map_to_buffers(const Map& map, Renderer& renderer, float aspect, const std::array<glm::vec4, 10>& color_palette);
+void write_map_to_buffers(const Map& map, Renderer& renderer, float aspect, const std::array<glm::vec3, 10>& color_palette);
 
 #endif
 

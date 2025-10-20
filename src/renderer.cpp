@@ -7,7 +7,7 @@
 
 #include "gl_loader.hpp"
 
-void run_message_loop(Window& window, Renderer& renderer) {
+void run_message_loop(Window& window, Renderer& renderer, const glm::vec3& background_color) {
     MSG message;
     ZeroMemory(&message, sizeof(MSG));
     while (true) {
@@ -27,7 +27,7 @@ void run_message_loop(Window& window, Renderer& renderer) {
             int client_height = client_rect.bottom - client_rect.top;
 
             glViewport(0, 0, client_width, client_height);
-            glClearColor(0.2157f, 0.1843f, 0.2275f, 1.0f);
+            glClearColor(background_color.x, background_color.y, background_color.z, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             glBindVertexArray(renderer.vao);

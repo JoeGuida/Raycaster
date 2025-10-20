@@ -7,9 +7,11 @@
 #include <Windows.h>
 
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
 #include "constants.hpp"
+#include "scene.hpp"
 #include "window.hpp"
 
 constexpr int SCREEN_WIDTH = 1280;
@@ -36,10 +38,12 @@ struct Renderer {
     std::array<glm::vec4, MAX_OBJECTS> colors;
     std::array<glm::vec4, MAX_LINES> line_data;
     std::array<glm::vec4, SCREEN_WIDTH> view_data;
+
+    Scene scene_data;
 };
 
 LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
-void run_message_loop(Window& window, Renderer& renderer);
+void run_message_loop(Window& window, Renderer& renderer, const glm::vec3& background_color);
 void initialize(Renderer& renderer);
 void draw(Renderer& renderer);
 void setup(Renderer& renderer);

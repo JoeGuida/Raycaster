@@ -9,6 +9,7 @@ struct Camera {
     glm::vec2 position;
     glm::vec2 direction;
     float fov;
+    float aspect;
 };
 
 void write_camera_fov_to_buffers(Renderer& renderer, const Camera& camera);
