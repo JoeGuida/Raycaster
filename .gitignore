@@ -1,8 +1,10 @@
 build/
+scenes/
 include/opengl
 include/win32
 include/glm
 include/spdlog
+include/yaml-cpp
 lib/
 log/
 maps/

@@ -24,7 +24,6 @@
 #include "camera.hpp"
 #include "constants.hpp"
 #include "convert.hpp"
-#include "environment.hpp"
 #include "gl_loader.hpp"
 #include "input.hpp"
 #include "logger.hpp"
