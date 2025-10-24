@@ -53,13 +53,13 @@ void initialize(Renderer& renderer) {
 }
 
 void draw(Renderer& renderer) {
-    glUseProgram(renderer.shaders[2]);
+    glUseProgram(renderer.shaders["point"]);
     glDrawArraysInstanced(GL_POINTS, 6, 1, renderer.point_count);
-    glUseProgram(renderer.shaders[1]);
+    glUseProgram(renderer.shaders["line"]);
     glDrawArraysInstanced(GL_LINES, 4, 2, renderer.line_count);
-    glUseProgram(renderer.shaders[3]);
+    glUseProgram(renderer.shaders["view"]);
     glDrawArraysInstanced(GL_LINES, 4, 2, renderer.view_count);
-    glUseProgram(renderer.shaders[0]);
+    glUseProgram(renderer.shaders["rect"]);
     glDrawElementsInstanced(GL_TRIANGLES, renderer.indices.size(), GL_UNSIGNED_INT, nullptr, renderer.rect_count);
 }
 

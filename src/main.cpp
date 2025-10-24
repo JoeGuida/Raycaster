@@ -7,9 +7,8 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
 
     std::filesystem::path current_path = std::filesystem::current_path();
     std::filesystem::path shader_path = current_path / "shaders";
-    std::filesystem::path map_path = current_path / "maps";
     std::filesystem::path scene_path = current_path / "scenes";
-    if(shader_path.empty() || map_path.empty() || scene_path.empty()) {
+    if(shader_path.empty() || scene_path.empty()) {
         spdlog::error("could not resolve project paths");
     }
 
@@ -28,12 +27,10 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
     //renderer.scene_data = scene;
 
     spdlog::info("loading map");
-    Map map;
-    load_map_from_file(map, (map_path / "map.txt").string());
-    write_map_to_buffers(map, renderer, scene.camera.aspect, color_palette);
+    write_map_to_buffers(scene.map, renderer, scene.camera.aspect, color_palette);
 
     spdlog::info("setting up renderer to draw");
-    glm::vec2 rect_size(scene.camera.aspect / map.width, 2.0f / map.height);
+    glm::vec2 rect_size(scene.camera.aspect / scene.map.width, 2.0f / scene.map.height);
     scene.camera.position = glm::vec4(-scene.camera.aspect + rect_size.x * 3.0f, 0.8f, 0.0f, 0.0f);
     float x = rect_size.x / 2.0f;
     float y = rect_size.y / 2.0f;
@@ -53,33 +50,21 @@ int WinMain(HINSTANCE instance, HINSTANCE previous_instance, LPSTR command_line,
         glm::vec3(0.0f, 0.0f, -1.0f),
         glm::vec3(0.0f, 1.0f, 0.0f));
 
-    spdlog::info("compiling shaders");
-    auto shaders = compile_shaders({"rect", "line", "point", "view"}, shader_path.string());
-    if(!shaders.has_value()) {
-        spdlog::info("{}", shaders.error());
-        return -1;
-    }
-
-    renderer.shaders = { 
-        shaders.value()["rect"], 
-        shaders.value()["line"], 
-        shaders.value()["point"], 
-        shaders.value()["view"] 
-    };
+    renderer.shaders = std::move(scene.shaders);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_PROGRAM_POINT_SIZE);
 
     spdlog::info("setting shader uniforms");
 
-    for(auto shader : renderer.shaders) { 
+    for(const auto& [name, shader] : renderer.shaders) { 
         glUseProgram(shader);
         set_shader_uniform(shader, "projection", projection);
         set_shader_uniform(shader, "view", view);
     }
 
-    glUseProgram(shaders.value()["point"]);
-    set_shader_uniform(shaders.value()["point"], "size", 3.0f);
+    glUseProgram(renderer.shaders["point"]);
+    set_shader_uniform(renderer.shaders["point"], "size", 3.0f);
 
     renderer.positions[POINT_OFFSET + renderer.point_count] = to_vec4(scene.camera.position);
     renderer.colors[POINT_OFFSET + renderer.point_count] = to_vec4(scene.camera.direction);
