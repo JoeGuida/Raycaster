@@ -9,6 +9,7 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_vector.hpp>
+#include <spdlog/spdlog.h>
 
 #include "constants.hpp"
 #include "math.hpp"
@@ -28,7 +29,6 @@ void write_camera_fov_to_buffers(Renderer& renderer, const Camera& camera) {
 }
 
 void raycast_fov(Renderer& renderer, const glm::vec2& direction) {
-    float max_distance = 2.5f;
     std::vector<glm::vec4> lines;
     lines.reserve(renderer.rect_count * 4);
 
@@ -69,7 +69,7 @@ void raycast_fov(Renderer& renderer, const glm::vec2& direction) {
             glm::vec2 point = start + (end - start) * closest_t;
             renderer.line_data[i] = glm::vec4(start.x, start.y, point.x, point.y); 
             renderer.view_data[i] = glm::vec4(
-                glm::clamp(max_distance * corrected_distance, 0.0f, 1.0f),
+                glm::clamp(corrected_distance, 0.0f, 1.0f),
                 color.x, color.y, color.z
             );
         }

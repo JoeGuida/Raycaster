@@ -59,48 +59,43 @@ std::optional<glm::vec3> parse_vec3(const YAML::Node& node) {
     return std::nullopt;
 }
 
-Scene load_scene_from_file(const std::string& filepath) {
-    Scene scene{};
-    YAML::Node yaml_scene = YAML::LoadFile(filepath);
-    
-    auto width = parse_uint32_t(yaml_scene["width"]);
-    auto height = parse_uint32_t(yaml_scene["height"]);
-    if(width.has_value() && height.has_value()) {
-        scene.width = width.value();
-        scene.height = height.value();
-    }
-
-    auto background_color = parse_vec3(yaml_scene["background_color"]);
-    if(background_color.has_value()) {
-        scene.background_color = background_color.value();
-    }
-
+std::optional<Camera> parse_camera(const YAML::Node& node, int width, int height) {
     Camera camera{};
-    auto cam_pos = parse_vec2(yaml_scene["camera"]["position"]);
-    auto cam_dir = parse_vec2(yaml_scene["camera"]["direction"]);
-    auto cam_fov = parse_float(yaml_scene["camera"]["fov"]);
+    auto cam_pos = parse_vec2(node["camera"]["position"]);
+    auto cam_dir = parse_vec2(node["camera"]["direction"]);
+    auto cam_fov = parse_float(node["camera"]["fov"]);
     if(cam_pos.has_value() && cam_dir.has_value() && cam_fov.has_value()) {
         camera.position = cam_pos.value();
         camera.direction = cam_dir.value();
         camera.fov = cam_fov.value();
-        camera.aspect = width.value() / static_cast<float>(height.value());
+        camera.aspect = width / static_cast<float>(height);
+    }
+    else {
+        return std::nullopt;
     }
 
-    scene.camera = camera;
+    return camera;
+}
 
+std::optional<Map> parse_map(const YAML::Node& node) {
     Map map;
-    auto map_file = parse_string(yaml_scene["map"]);
+    auto map_file = parse_string(node["map"]);
     std::filesystem::path current_path = std::filesystem::current_path();
     std::filesystem::path map_path = current_path / "maps";
-    if(map_file.has_value()) {
-        std::string s = (map_path / map_file.value()).string();
-        load_map_from_file(map, s);
+    if(!map_file.has_value()) {
+        return std::nullopt;
     }
 
-    scene.map = std::move(map);
+    std::string s = (map_path / map_file.value()).string();
+    load_map_from_file(map, s);
+    return map;
+}
 
+std::optional<std::unordered_map<std::string, uint32_t>> parse_shaders(const YAML::Node& node) {
+    std::filesystem::path current_path = std::filesystem::current_path();
     std::filesystem::path shader_path = current_path / "shaders"; 
-    auto shaders = yaml_scene["shaders"];
+    auto shaders = node["shaders"];
+    std::unordered_map<std::string, uint32_t> shader_map;
     if(shaders.IsSequence()) {
         for(int i = 0; i < shaders.size(); i++) {
             auto shader_name = parse_string(shaders[i]["name"]);
@@ -120,6 +115,7 @@ Scene load_scene_from_file(const std::string& filepath) {
                         vertex_shader = vertex_id.value();
                     }
                 }
+
                 if(fragment.has_value()) {
                     auto fragment_id = compile_shader(shader_path.string(), shader_name.value(), GL_FRAGMENT_SHADER);
                     if(!fragment_id.has_value()) {
@@ -136,11 +132,45 @@ Scene load_scene_from_file(const std::string& filepath) {
                         spdlog::error("{}", shader.error());
                     }
                     else {
-                        scene.shaders[shader_name.value()] = shader.value();
+                        shader_map[shader_name.value()] = shader.value();
                     }
                 }
             }
         }
+    }
+
+    return shader_map;
+}
+
+Scene load_scene_from_file(const std::string& filepath) {
+    Scene scene{};
+    YAML::Node yaml_scene = YAML::LoadFile(filepath);
+
+    auto width = parse_uint32_t(yaml_scene["width"]);
+    auto height = parse_uint32_t(yaml_scene["height"]);
+    if(width.has_value() && height.has_value()) {
+        scene.width = width.value();
+        scene.height = height.value();
+    }
+
+    auto background_color = parse_vec3(yaml_scene["background_color"]);
+    if(background_color.has_value()) {
+        scene.background_color = background_color.value();
+    }
+
+    auto camera = parse_camera(yaml_scene, width.value(), height.value());
+    if(camera.has_value()) {
+        scene.camera = camera.value();
+    }
+
+    auto map = parse_map(yaml_scene);
+    if(map.has_value()) {
+        scene.map = std::move(map).value();
+    }
+
+    auto shaders = parse_shaders(yaml_scene);
+    if(shaders.has_value()) {
+        scene.shaders = std::move(shaders).value();
     }
 
     return scene;

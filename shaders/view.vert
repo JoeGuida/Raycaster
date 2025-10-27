@@ -15,10 +15,11 @@ out vec3 vertex_color;
 
 void main() {
     float width = 2.0f / SIZE;
-    float height = data[gl_InstanceID].x;
+    float height = 2.0f / SIZE;
+    float distance = data[gl_InstanceID].x;
     
     float x = (gl_InstanceID + 0.5) * width;
-    float y =  -height / 2.0f + pos.y * height;
+    float y =  -distance / 2.0f + pos.y * distance;
 
     gl_Position = projection * view * vec4(x, y, 0.0, 1.0);
     vertex_color = data[gl_InstanceID].yzw; 

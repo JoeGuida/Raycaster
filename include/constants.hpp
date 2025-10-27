@@ -6,8 +6,8 @@
 
 #include <glm/vec3.hpp>
 
-constexpr int width = 1280;
-constexpr int height = 720;
+constexpr int SCREEN_WIDTH  = 1280;
+constexpr int SCREEN_HEIGHT = 720;
 
 constexpr size_t RECT_VERTICES_COUNT = 4;
 constexpr size_t LINE_VERTICES_COUNT = 2;
