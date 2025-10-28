@@ -108,31 +108,3 @@ void set_shader_uniform(uint32_t program, const std::string& uniform, const glm:
     glUniform3fv(glGetUniformLocation(program, uniform.c_str()), 1, glm::value_ptr(value));
 }
 
-std::expected<std::unordered_map<std::string, uint32_t>, std::string> compile_shaders(const std::vector<std::string>& shader_names, const std::string& path) {
-    std::unordered_map<std::string, uint32_t> shaders;
-    for(auto& name : shader_names) {
-        auto vertex_shader = compile_shader(path, name, GL_VERTEX_SHADER);
-        auto fragment_shader = compile_shader(path, name, GL_FRAGMENT_SHADER);
-
-        if(!vertex_shader.has_value()) { 
-            spdlog::info("vertex");
-            return std::unexpected(std::format("{}", vertex_shader.error())); 
-        }
-
-        if(!fragment_shader.has_value()) { 
-            spdlog::info("fragment");
-            return std::unexpected(std::format("{}", fragment_shader.error())); 
-        }
-
-        auto program = link_shaders(vertex_shader.value(), fragment_shader.value());
-        if(!program.has_value()) { 
-            spdlog::info("program");
-            return std::unexpected(std::format("{}", program.error())); 
-        }
-
-        shaders[name] = program.value();
-    }
-
-    return shaders;
-}
-

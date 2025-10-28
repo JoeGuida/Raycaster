@@ -17,7 +17,6 @@ std::expected<uint32_t, std::string> link_shaders(uint32_t vertex_shader, uint32
 void set_shader_uniform(uint32_t program, const std::string& uniform, float value);
 void set_shader_uniform(uint32_t program, const std::string& uniform, const glm::mat4x4& value);
 void set_shader_uniform(uint32_t program, const std::string& uniform, const glm::vec3& value);
-std::expected<std::unordered_map<std::string, uint32_t>, std::string> compile_shaders(const std::vector<std::string>& shader_names, const std::string& path);
 
 #endif
 

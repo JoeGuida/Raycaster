@@ -58,8 +58,7 @@ void handle_inputs(LPARAM lparam, HWND hwnd) {
 
     if(raw->header.dwType == RIM_TYPEMOUSE) {
         if(raw->data.mouse.usFlags == MOUSE_MOVE_RELATIVE) {
-            spdlog::info("MouseRel ({}, {})", raw->data.mouse.lLastX, raw->data.mouse.lLastY); 
-            
+            //spdlog::info("MouseRel ({}, {})", raw->data.mouse.lLastX, raw->data.mouse.lLastY); 
         }
     }
 

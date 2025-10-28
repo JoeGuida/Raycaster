@@ -12,6 +12,7 @@
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
+#include "instance_data.hpp"
 #include "map.hpp"
 #include "shader.hpp"
 
@@ -142,6 +143,54 @@ std::optional<std::unordered_map<std::string, uint32_t>> parse_shaders(const YAM
     return shader_map;
 }
 
+std::optional<std::vector<glm::vec3>> parse_palette(const YAML::Node& node) {
+    auto palette = node["palette"];
+    std::vector<glm::vec3> color_palette;
+    if(palette.IsSequence()) {
+        color_palette.reserve(palette.size());
+        for(int i = 0; i < palette.size(); i++) {
+            auto color = parse_vec3(palette[i]);
+            if(color.has_value()) {
+                color_palette.push_back(color.value());
+            }
+        }
+    }
+
+    return color_palette;
+}
+
+void parse_objects(const YAML::Node& node, std::vector<InstanceData>& points, std::vector<InstanceData>& lines, std::vector<InstanceData>& rects) {
+    auto objects = node["objects"];
+    if(objects.IsSequence()) {
+        for(int i = 0; i < objects.size(); i++) {
+            InstanceData data;
+            auto type = parse_string(objects[i]["type"]);
+            auto position = parse_vec2(objects[i]["position"]);
+            auto color = parse_vec3(objects[i]["color"]);
+           
+            if(position.has_value()) {
+                data.position = position.value();
+            }
+
+            if(color.has_value()) {
+                data.color = color.value();
+            }
+
+            if(type.has_value()) {
+                if(type == "point") {
+                    points.push_back(data);
+                }
+                if(type == "line") {
+                    lines.push_back(data);
+                }
+                if(type == "rect") {
+                    rects.push_back(data);
+                }
+            }
+        }
+    }
+}
+
 Scene load_scene_from_file(const std::string& filepath) {
     Scene scene{};
     YAML::Node yaml_scene = YAML::LoadFile(filepath);
@@ -172,6 +221,13 @@ Scene load_scene_from_file(const std::string& filepath) {
     if(shaders.has_value()) {
         scene.shaders = std::move(shaders).value();
     }
+
+    auto palette = parse_palette(yaml_scene);
+    if(palette.has_value()) {
+        scene.palette = std::move(palette).value();
+    }
+
+    parse_objects(yaml_scene, scene.points, scene.lines, scene.rects);
 
     return scene;
 }

@@ -1,11 +1,11 @@
 #ifndef RAYCASTER_MAP_HPP
 #define RAYCASTER_MAP_HPP
 
-#include <array>
-#include <print>
+#include <cstdint>
 #include <string>
+#include <vector>
 
-#include <glm/vec4.hpp>
+#include <glm/vec3.hpp>
 
 #include "renderer.hpp"
 
@@ -18,7 +18,7 @@ struct Map {
 };
 
 void load_map_from_file(Map& map, const std::string& filepath);
-void write_map_to_buffers(const Map& map, Renderer& renderer, float aspect, const std::array<glm::vec3, 10>& color_palette);
+void write_map_to_buffers(const Map& map, Renderer& renderer, float aspect, const std::vector<glm::vec3>& color_palette);
 
 #endif
 
