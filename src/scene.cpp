@@ -9,6 +9,7 @@
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <spdlog/spdlog.h>
 #include <yaml-cpp/yaml.h>
 
@@ -68,7 +69,7 @@ std::optional<Camera> parse_camera(const YAML::Node& node, int width, int height
     if(cam_pos.has_value() && cam_dir.has_value() && cam_fov.has_value()) {
         camera.position = cam_pos.value();
         camera.direction = cam_dir.value();
-        camera.fov = cam_fov.value();
+        camera.fov = glm::radians(cam_fov.value());
         camera.aspect = width / static_cast<float>(height);
     }
     else {
@@ -110,7 +111,7 @@ std::optional<std::unordered_map<std::string, uint32_t>> parse_shaders(const YAM
                 if(vertex.has_value()) {
                     auto vertex_id = compile_shader(shader_path.string(), shader_name.value(), GL_VERTEX_SHADER);
                     if(!vertex_id.has_value()) {
-                        spdlog::error("{}", vertex_id.error());
+                        spdlog::error("ERROR: {}", vertex_id.error());
                     }
                     else {
                         vertex_shader = vertex_id.value();
@@ -120,7 +121,7 @@ std::optional<std::unordered_map<std::string, uint32_t>> parse_shaders(const YAM
                 if(fragment.has_value()) {
                     auto fragment_id = compile_shader(shader_path.string(), shader_name.value(), GL_FRAGMENT_SHADER);
                     if(!fragment_id.has_value()) {
-                        spdlog::error("{}", fragment_id.error());
+                        spdlog::error("ERROR: {}", fragment_id.error());
                     }
                     else {
                         fragment_shader = fragment_id.value();
@@ -130,7 +131,7 @@ std::optional<std::unordered_map<std::string, uint32_t>> parse_shaders(const YAM
                 if(vertex_shader.has_value() && fragment_shader.has_value()) {
                     auto shader = link_shaders(vertex_shader.value(), fragment_shader.value());
                     if(!shader.has_value()) {
-                        spdlog::error("{}", shader.error());
+                        spdlog::error("ERROR: {}", shader.error());
                     }
                     else {
                         shader_map[shader_name.value()] = shader.value();

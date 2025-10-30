@@ -58,6 +58,8 @@ struct Renderer {
     std::array<glm::vec4, SCREEN_WIDTH> view_data;
 
     std::unordered_map<std::string, uint32_t> shaders;
+
+    std::vector<glm::vec4> rect_lines;
 };
 
 LRESULT CALLBACK window_proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
@@ -66,6 +68,7 @@ void enable(const Renderer& renderer, const std::vector<uint32_t>& features);
 void initialize(Renderer& renderer);
 void draw(Renderer& renderer);
 void setup(Renderer& renderer);
+void precompute_lines(Renderer& renderer);
 
 #endif
 

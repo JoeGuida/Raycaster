@@ -94,3 +94,17 @@ void setup(Renderer& renderer) {
     glEnableVertexAttribArray(0);
 }
 
+void precompute_lines(Renderer& renderer) {
+    for(int i = 0; i < renderer.rect_count; i++) {
+        glm::vec2 v0 = glm::vec2(renderer.positions[i].x, renderer.positions[i].y) + renderer.vertices[0];
+        glm::vec2 v1 = glm::vec2(renderer.positions[i].x, renderer.positions[i].y) + renderer.vertices[1];
+        glm::vec2 v2 = glm::vec2(renderer.positions[i].x, renderer.positions[i].y) + renderer.vertices[2];
+        glm::vec2 v3 = glm::vec2(renderer.positions[i].x, renderer.positions[i].y) + renderer.vertices[3];
+
+        renderer.rect_lines.emplace_back(glm::vec4(v0.x, v0.y, v1.x, v1.y));
+        renderer.rect_lines.emplace_back(glm::vec4(v1.x, v1.y, v3.x, v3.y));
+        renderer.rect_lines.emplace_back(glm::vec4(v3.x, v3.y, v2.x, v2.y));
+        renderer.rect_lines.emplace_back(glm::vec4(v2.x, v2.y, v0.x, v0.y));
+    }
+}
+

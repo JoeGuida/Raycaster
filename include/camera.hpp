@@ -13,6 +13,6 @@ struct Camera {
 };
 
 void write_camera_fov_to_buffers(Renderer& renderer, const Camera& camera);
-void raycast_fov(Renderer& renderer, const glm::vec2& direction);
+void raycast_fov(Renderer& renderer, const Camera& camera);
 
 #endif
